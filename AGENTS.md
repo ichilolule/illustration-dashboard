@@ -23,6 +23,7 @@
 
 ## GitHub公開
 
+- 現在の `main` と `origin` は履歴を分離した公開リポジトリ `ichilolule/illustration-dashboard`。`legacy` リモートと `legacy-main`、`migrate-clean-public` ブランチには旧履歴が残る。旧ブランチやタグを `origin` へpushせず、公開用 `main` にマージしない。
 - ユーザーから「公開までやって」などGitHub公開を明示的に依頼されていない場合は、実装と確認が完了した時点で停止し、ユーザーがGitHubへ直接アップロードすべき変更ファイルを箇条書きで列挙する。コミットやpushは行わない。
 - 通常の公開先は `main`。ユーザーが公開を依頼したら、テスト、差分レビュー、コミット、`origin/main` へのpushまで行う。
 - 強制pushをしない。認証が必要ならユーザー本人のログイン操作だけを案内する。
