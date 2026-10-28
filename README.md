@@ -1,6 +1,8 @@
 # 案件管理ダッシュボード
 
-このフォルダがダッシュボードの正本です。公開用ファイルは常に `index.html` で、修正のたびに `dashboard_v60.html` のような複製を作る必要はありません。公開履歴は個人情報を含まない新規リポジトリ `ichilolule/illustration-dashboard` から始めています。移行前の履歴は非公開の旧リポジトリに保管しています。
+このフォルダがダッシュボードの正本です。公開用ファイルは常に `index.html` で、修正のたびに `dashboard_v60.html` のような複製を作る必要はありません。公開履歴は旧履歴を引き継がない新規リポジトリ `ichilolule/illustration-dashboard` から始めています。移行前の履歴は非公開の旧リポジトリに保管しています。
+
+公開URLは `https://ichilolule.github.io/illustration-dashboard/` です。旧 `/dashboard/` のPages公開は停止済みです。Chromeのブックマークやインストール済みWebアプリは新URLへ設定し直してください。同じChromeプロファイルでは旧URLと新URLのブラウザ保存データを共有します。
 
 ## 普段の流れ
 

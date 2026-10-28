@@ -43,7 +43,7 @@
    - `https://www.googleapis.com/auth/userinfo.email`
    - `https://www.googleapis.com/auth/calendar.app.created`
    - `https://www.googleapis.com/auth/calendar.calendarlist.readonly`
-6. 利用者のデータが入っている元のURLで接続する。`localhost`、`file://`、別ドメインには元のブラウザ保存データが自動移行しない。
+6. `https://ichilolule.github.io/illustration-dashboard/` を元と同じChromeプロファイルで開いて接続する。同じ生成元の旧 `/dashboard/` とブラウザ保存データを共有する。`localhost`、`file://`、別ドメインには元のブラウザ保存データが自動移行しない。
 7. Google側の専用カレンダー作成、転記、再転記時の非重複、変更・削除・オフライン再開、通常ブラウザとホーム画面版の中断引き継ぎを実機で確認する。
 8. ChatGPT側ではカレンダー一覧を再取得し、新しい専用カレンダーのIDを指定して予定を検索する。`primary` だけを検索して見つからないと結論しない。
 9. 新しいJSONを保存し、従来のiCloud保存ファイルを更新する。元のJSONは初回移行の復元用として保持する。
