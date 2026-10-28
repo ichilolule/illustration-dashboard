@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="icon" href="favicon/favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="案件管理">
+<meta name="theme-color" content="#714944">
+
+<title>案件管理 v64</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{
+  --bg2:  #F6F0E8;
+  --bg: #EDE1D4;
+  --bg3: #DECCB4;
+  --bd: #C8B8A4;
+  --tx:  #714944;
+  --tx2: #714944;
+  --tx3: #9C8874;
+  --ac:    #884838;
+  --ac-bg: #D8E8E2;
+  --gr:    #714944;
+  --gr-bg: #D8E8E2;
+  --am:    #A06820;
+  --am-bg: #F5E4C8;
+  --am-bd: #dead54;
+  --rd:    #7A3848;
+  --rd-bg: #EED0D4;
+  --rd-bd: #B87888;
+  --r:10px;--rs:6px;
+}
+.sr-only{position:absolute;clip:rect(0,0,0,0);width:1px;height:1px;overflow:hidden}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;background:var(--bg);color:var(--tx);padding:1.25rem;max-width:1200px;margin:0 auto}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;background:var(--tx2);padding:.75rem 1.1rem;border-radius:var(--r)}
+.top-bar h1{font-size:18px;font-weight:500;color:var(--bg)}
+.top-bar-actions{display:flex;align-items:center;gap:8px}
+.sync-btn{font-size:12px;padding:4px 10px;border-radius:var(--rs);border:.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:var(--bg);cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;transition:background .15s}
+.sync-btn:hover{background:rgba(255,255,255,.22)}
+.sync-btn:disabled{opacity:.65;cursor:default}
+.gcal-sync-dot{width:7px;height:7px;border-radius:50%;background:var(--am-bd);box-shadow:0 0 0 1px rgba(255,255,255,.2);flex:none}
+.sync-btn[data-connected="true"] .gcal-sync-dot{background:#6fbd98}
+@media(max-width:520px){
+  .top-bar{align-items:flex-start;flex-direction:column;gap:.6rem}
+  .top-bar-actions{width:100%;gap:6px;flex-wrap:wrap}
+}
+.alert-bar{border-radius:var(--rs);padding:.55rem 1rem;font-size:13px;display:none;margin-bottom:.4rem}
+.alert-bar.show{display:block}
+.a-amber{background:var(--am-bg);border:.5px solid var(--am-bd);color:var(--am)}
+.a-red{background:var(--rd-bg);border:.5px solid var(--rd-bd);color:var(--rd)}
+.tabs{display:flex;border-bottom:.5px solid var(--bd);margin-bottom:1rem;gap:0;overflow-x:auto}
+.tab{font-size:14px;padding:8px 14px;cursor:pointer;color:var(--tx2);border:none;border-bottom:2px solid transparent;margin-bottom:-.5px;background:none;white-space:nowrap}
+.tab.active{color:var(--tx);border-bottom-color:var(--tx);font-weight:500}
+.tp{display:none}.tp.active{display:block}
+.list-toolbar{display:flex;align-items:center;gap:6px;margin-bottom:.75rem;flex-wrap:wrap}
+.sort-btn{font-size:12px;padding:3px 10px;border-radius:20px;border:.5px solid var(--bd);background:none;color:var(--tx2);cursor:pointer}
+.sort-btn.active{background:var(--ac-bg);color:var(--tx);border-color:var(--ac)}
+.case-list{display:flex;flex-direction:column;gap:.5rem}
+.case-card{background:var(--bg2);border:.5px solid var(--bd);border-radius:var(--r);padding:.8rem 1rem;cursor:pointer;transition:border-color .15s}
+.case-card:hover{border-color:var(--tx3)}
+.case-card.remind-active{border-color:var(--am-bd)}
+.case-card.highlight{border-color:var(--ac);background:var(--bg2)}
+.case-card.delivered-awaiting-payment{background:#F0E7DC;border-color:#D8C8B6;box-shadow:none}
+.case-card.delivered-awaiting-payment .card-name{color:var(--tx)}
+.case-card.delivered-awaiting-payment .qb-row .qb-lbl{color:var(--tx2)}
+.badge{font-size:12px;padding:2px 8px;border-radius:20px;white-space:nowrap;font-weight:500}
+.b-prog{background:var(--gr-bg);color:var(--gr)}.b-wait{background:var(--am-bg);color:var(--am)}
+.b-delivered{background:var(--bg2);color:var(--tx2);border:.5px solid var(--bd)}.b-complete{background:var(--gr-bg);color:var(--gr)}.b-archived-other{background:var(--rd-bg);color:var(--rd)}
+.b-paid{background:var(--gr-bg);color:var(--gr);font-size:11px}.b-unpaid{background:var(--rd-bg);color:var(--rd);font-size:11px}
+.b-postpaid{background:var(--am-bg);color:var(--am);font-size:11px}
+.b-remind{background:var(--am-bg);color:var(--am);font-size:11px}.b-overdue{background:var(--rd-bg);color:var(--rd);font-size:11px}
+.card-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.card-name{font-size:15px;font-weight:500;flex:1;min-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-project{font-size:12px;font-weight:400;color:var(--tx2);margin-left:8px}
+@media(max-width:520px){.card-top .card-name{order:2;flex-basis:100%}}
+.card-dl{font-size:13px;color:var(--tx2);white-space:nowrap}.card-dl.urg{color:var(--rd);font-weight:500}
+.card-sub{font-size:13px;color:var(--tx2);margin-top:3px}
+.rev-ctrl{display:flex;align-items:center;gap:5px;font-size:12px}
+.rc-btn{width:20px;height:20px;border-radius:50%;border:.5px solid var(--bd);background:var(--bg2);cursor:pointer;font-size:13px;line-height:1;color:var(--tx2);flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0}
+.rc-btn:hover{background:var(--bg3);border-color:var(--bd)}
+.rc-val{min-width:24px;text-align:center;font-size:12px;font-weight:500;color:var(--tx)}
+/* card quick actions */
+.add-btn{width:100%;background:none;border:.5px dashed var(--bd);border-radius:var(--r);padding:.65rem;font-size:14px;color:var(--tx2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:.5rem}
+.add-btn:hover{background:var(--bg3)}
+/* calendar */
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem}
+.cal-lbl{font-size:16px;font-weight:500}
+.cal-nav-btns{display:flex;gap:4px}
+.cal-nav-btns button{font-size:13px;padding:4px 12px;border:.5px solid var(--bd);border-radius:var(--rs);background:var(--bg2);cursor:pointer;color:var(--tx2)}
+.cal-nav-btns button:hover{background:var(--bg3)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:max-content;gap:3px}
+.cal-dh{font-size:12px;color:var(--tx2);text-align:center;padding:6px 0;font-weight:500;background:var(--bg2);border-radius:var(--rs)}
+.cal-cell{min-width:0;min-height:110px;border:.5px solid var(--bd);border-radius:var(--rs);padding:4px 5px;background:var(--bg2);position:relative;display:grid;grid-auto-rows:max-content;align-content:start;gap:2px}
+.cal-cell.today{background:var(--bg);border-color:var(--ac);border-width:1.5px}.cal-cell.other{background:var(--bg3);opacity:.5}
+.cal-cell.holiday{background:repeating-linear-gradient(45deg,var(--bg3),var(--bg3) 4px,var(--bg2) 4px,var(--bg2) 8px);opacity:.7}
+.cal-cell.holiday .cal-date{color:var(--tx3)}
+.cal-cell.wait-day{background:var(--am-bg);opacity:.85}
+.cal-date{font-size:12px;font-weight:500;color:var(--tx3);margin-bottom:1px;display:flex;align-items:center;justify-content:space-between;gap:3px}
+.cal-cell.today .cal-date{color:var(--tx);font-weight:600}
+.cal-date .holiday-toggle{font-size:9px;color:var(--tx3);background:none;border:none;cursor:pointer;padding:0 2px;opacity:0;transition:opacity .15s;line-height:1}
+.cal-cell:hover .holiday-toggle{opacity:.6}
+.cal-cell:hover .holiday-toggle:hover{opacity:1;color:var(--ac)}
+.cal-cell.holiday .holiday-toggle{opacity:.7;color:var(--am)}
+.cal-cell.holiday:hover .holiday-toggle{opacity:1}
+.cal-ev{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:1px;cursor:pointer;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+.ev-dl{background:var(--gr-bg);color:var(--gr)}.ev-dl-u{background:var(--rd-bg);color:var(--rd)}.ev-pay{background:var(--am-bg);color:var(--am)}.ev-pay-o{background:var(--rd-bg);color:var(--rd)}
+.cal-task{min-width:0;font-size:10.5px;padding:2px 5px;border-radius:3px;cursor:pointer;white-space:normal;overflow-wrap:anywhere;line-height:1.35;display:block;border-left:2px solid var(--bd)}
+.cal-task .task-icon{font-size:11px;flex-shrink:0;opacity:.85}
+.cal-task.t-rough{background:#FCE8E0;color:#8E4030;border-left-color:#8E4030}
+.cal-task.t-line{background:#E8E0F0;color:#5B4078;border-left-color:#5B4078}
+.cal-task.t-clean{background:#E0EAF0;color:#385878;border-left-color:#385878}
+.cal-task.t-retouch{background:#E8EFE0;color:#506838;border-left-color:#506838}
+.cal-task.fb{opacity:.78;border-left-style:dashed;font-style:italic}
+.cal-task:hover{filter:brightness(.96)}
+.card-price{font-size:13px;color:var(--tx2);font-weight:500;white-space:nowrap;padding-left:4px}
+.case-card.expanded .card-price{color:var(--tx)}
+.cal-wait-lbl{font-size:10.5px;color:var(--am);padding:2px 5px;line-height:1.35;font-style:italic;display:flex;align-items:center;gap:3px}
+.cal-leg{display:flex;gap:12px;margin:0 0 .75rem;flex-wrap:wrap}
+.cal-leg span{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+/* today action panel */
+.today-panel{background:linear-gradient(135deg,var(--bg2) 0%,var(--bg) 100%);border:1px solid var(--ac);border-radius:var(--r);padding:1rem 1.1rem;margin-bottom:1rem}
+.today-panel-hdr{display:flex;align-items:center;gap:8px;margin-bottom:.7rem;font-size:13px;color:var(--tx2)}
+.today-panel-hdr-date{font-weight:500;color:var(--tx);font-size:14px}
+.today-task-row{display:flex;align-items:center;gap:9px;padding:7px 10px;margin-bottom:4px;background:var(--bg2);border-radius:var(--rs);font-size:14px;cursor:pointer;border:.5px solid var(--bd);transition:border-color .15s}
+.today-task-row:hover{border-color:var(--tx3)}
+.today-task-row:last-child{margin-bottom:0}
+.today-task-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.today-task-block{font-size:11px;color:var(--tx3);min-width:56px;flex-shrink:0;letter-spacing:.02em}
+.today-task-type{font-size:13px;font-weight:500;color:var(--tx);min-width:80px;flex-shrink:0}
+.today-task-case{font-size:13px;color:var(--tx2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.today-empty{font-size:13px;color:var(--tx3);padding:8px 12px;background:var(--bg2);border-radius:var(--rs);font-style:italic;text-align:center}
+.today-wait{font-size:13px;color:var(--am);padding:8px 12px;background:var(--am-bg);border-radius:var(--rs);border:.5px solid var(--am-bd);margin-top:4px;display:flex;align-items:center;gap:6px}
+/* card quick actions */
+.card-quick{display:flex;flex-direction:column;gap:3px;margin-top:5px}
+.qb-row{display:flex;gap:3px;flex-wrap:wrap;align-items:center;min-height:22px}
+.qb-lbl{font-size:11px;color:var(--tx3);min-width:24px;flex-shrink:0;letter-spacing:-.01em}
+.qb{font-size:12px;padding:2px 8px;border-radius:20px;border:.5px solid var(--bd);background:none;color:var(--tx3);cursor:pointer;white-space:nowrap;line-height:1.5;transition:background .1s,color .1s}
+.qb:hover{background:var(--bg3);color:var(--tx);border-color:var(--bd)}
+.qb-s.on{background:var(--ac-bg);color:var(--tx);border-color:var(--ac);font-weight:500}
+.qb-p.on{background:var(--gr-bg);color:var(--gr);border-color:var(--gr);font-weight:500}
+.qb-paid-btn{font-size:12px;padding:2px 9px;border-radius:20px;border:.5px solid var(--gr);background:var(--gr-bg);color:var(--gr);cursor:pointer;white-space:nowrap;margin-left:auto;line-height:1.5}
+.qb-paid-btn:hover{filter:brightness(.96)}
+.qb-arc{font-size:12px;padding:2px 7px;border-radius:20px;border:.5px solid var(--bd);background:none;color:var(--tx3);cursor:pointer;line-height:1.5}
+.qb-arc:hover{background:var(--bg3)}
+.qb-row-bottom{align-items:flex-end}
+.qb-card-actions{margin-left:auto;display:flex;gap:3px;align-items:center;justify-content:flex-end;flex-wrap:nowrap}
+.qb-rev-group{display:flex;gap:3px;align-items:center;white-space:nowrap}
+.detail-actions{border-top:.5px solid var(--bd);margin-top:.85rem;padding-top:.85rem;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.detail-data-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.case-json-btn{font-size:12px;padding:3px 9px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.case-json-btn:hover{background:var(--bg3);border-color:var(--tx3)}
+.detail-company-toggle{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap}
+/* calendar multi-month */
+.cal-month-hdr{font-size:14px;font-weight:500;color:var(--tx);margin:1.1rem 0 .4rem;padding-bottom:.25rem;border-bottom:.5px solid var(--bd)}
+.cal-month-hdr:first-child{margin-top:0}
+/* archive */
+.arc-list{display:flex;flex-direction:column;gap:.5rem}
+.arc-card{background:var(--bg3);border:.5px solid var(--bd);border-radius:var(--r);padding:.7rem 1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;transition:border-color .15s}
+.arc-card:hover{border-color:var(--tx3)}
+.arc-info{flex:1;min-width:0;cursor:pointer}
+.arc-name{font-size:14px;font-weight:500;color:var(--tx2)}
+.arc-sub{font-size:12px;color:var(--tx3);margin-top:2px}
+.restore-btn{font-size:12px;padding:4px 10px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);cursor:pointer;white-space:nowrap}
+.restore-btn:hover{background:var(--bd)}
+/* estimate */
+.est-wrap{max-width:560px}
+.est-sec{margin-bottom:1.25rem}
+.sl{font-size:12px;color:var(--tx3);letter-spacing:.05em;margin-bottom:.5rem;font-weight:500;text-transform:uppercase}
+.tgl-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:.5px solid var(--bd)}
+.tgl-row:last-child{border-bottom:none}
+.tgl-lbl{flex:1;font-size:14px}.tgl-sub{font-size:12px;color:var(--tx3);margin-top:1px}
+.tgl{position:relative;width:34px;height:19px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.sw{position:absolute;inset:0;border-radius:20px;background:var(--bd);cursor:pointer;transition:.2s}
+.sw:before{content:'';position:absolute;width:13px;height:13px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s}
+input:checked+.sw{background:var(--ac)}
+input:checked+.sw:before{transform:translateX(15px)}
+.breakdown{background:var(--bg3);border-radius:var(--rs);padding:10px;margin-bottom:.75rem}
+.brow{display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0}
+.brow.tot{font-size:15px;font-weight:500;color:var(--tx);border-top:.5px solid var(--bd);margin-top:5px;padding-top:8px}
+.brow.floor{font-size:11px;color:var(--tx3);justify-content:flex-end;padding-top:2px}
+.big-price{font-size:28px;font-weight:500;margin:2px 0}.price-note{font-size:12px;color:var(--tx3)}
+.char-row{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg3);border-radius:var(--rs);margin-bottom:5px}
+.char-row select{flex:1;min-width:0;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 6px;background:var(--bg2);color:var(--tx);text-overflow:ellipsis}
+.char-price{font-size:13px;font-weight:500;min-width:58px;text-align:right}
+.rm-btn{font-size:15px;color:var(--tx3);cursor:pointer;border:none;background:none;padding:0 3px;flex-shrink:0}
+.add-char-btn{font-size:13px;color:var(--ac);cursor:pointer;border:none;background:none;display:flex;align-items:center;gap:3px;margin-top:4px}
+.custom-name-input{flex:1;min-width:0;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 6px;background:var(--bg2);color:var(--tx)}
+.custom-price-input{width:72px;flex-shrink:0;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 6px;background:var(--bg2);color:var(--tx)}
+.usage-note{font-size:11px;color:var(--tx3);margin-top:4px}
+.divider{height:.5px;background:var(--bd);margin:1rem 0}
+.chip-group{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:3px}
+.chip{padding:4px 10px;border-radius:20px;border:.5px solid var(--bd);font-size:13px;cursor:pointer;background:var(--bg2);color:var(--tx2)}
+.chip.on{background:var(--ac-bg);color:var(--tx);border-color:var(--ac)}
+.other-inp{font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:4px 8px;background:var(--bg2);color:var(--tx);width:100%;margin-top:4px;display:none}
+.other-inp.show{display:block}
+/* settings */
+.settings-wrap{max-width:600px}
+.settings-section{background:var(--bg2);border:.5px solid var(--bd);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem}
+.settings-section h3{font-size:14px;font-weight:500;margin-bottom:.75rem}
+.settings-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:.5px solid var(--bd)}
+.settings-row:last-child{border-bottom:none}
+.settings-row label{flex:1;font-size:14px;color:var(--tx)}
+.settings-row input[type=number]{width:90px;font-size:14px;border:.5px solid var(--bd);border-radius:var(--rs);padding:4px 8px;background:var(--bg2);color:var(--tx);text-align:right}
+.settings-row input[type=text]{flex:1;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:4px 8px;background:var(--bg2);color:var(--tx)}
+.settings-row .unit{font-size:13px;color:var(--tx3);min-width:30px}
+.draw-settings-list{display:flex;flex-direction:column;gap:5px}
+.draw-setting-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:.5px solid var(--bd)}
+.draw-setting-row:last-child{border-bottom:none}
+.draw-setting-row input[type=text]{flex:1;min-width:0;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:4px 8px;background:var(--bg2);color:var(--tx)}
+.draw-setting-row input[type=number]{width:86px;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:4px 8px;background:var(--bg2);color:var(--tx);text-align:right}
+.draw-setting-row .unit{font-size:12px;color:var(--tx3);white-space:nowrap}
+.draw-item-btn{font-size:12px;padding:4px 8px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);cursor:pointer;white-space:nowrap}
+.draw-item-btn:hover{background:var(--bg3)}
+.draw-hidden-summary{font-size:12px;color:var(--tx3);cursor:pointer;margin-top:8px}
+.reset-btn{font-size:13px;padding:5px 14px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);cursor:pointer;margin-top:.5rem}
+.reset-btn:hover{background:var(--bg3)}
+/* modals */
+/* --- dialog.overlay : <dialog>要素ベースのモーダル --- */
+dialog.overlay{
+  border:none;padding:0;background:transparent;
+  width:100vw;max-width:100vw;height:100vh;max-height:100vh;
+  overflow:visible;isolation:isolate;
+  color:var(--tx);
+}
+dialog.overlay[open]{
+  display:flex;align-items:center;justify-content:center;
+}
+dialog.overlay::backdrop{background:rgba(0,0,0,.35)}
+/* モーダル内のselectをフラットデザインに統一（OSのデフォルト陰影を除去） */
+dialog.overlay select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%239C8874' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 8px center;
+  padding-right:24px !important;
+}
+.modal{background:var(--bg2);border-radius:var(--r);padding:1.25rem;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-sm{width:380px}
+.modal-tabs{display:flex;border-bottom:.5px solid var(--bd);margin-bottom:.875rem;gap:0}
+.modal-tab{font-size:13px;padding:5px 12px;cursor:pointer;color:var(--tx2);border:none;border-bottom:2px solid transparent;margin-bottom:-.5px;background:none;white-space:nowrap}
+.modal-tab.active{color:var(--tx);border-bottom-color:var(--tx);font-weight:500}
+.mp{display:none}.mp.active{display:block}
+.fr{margin-bottom:.65rem}
+.fr label{font-size:12px;color:var(--tx2);display:block;margin-bottom:3px}
+.fr input,.fr select,.fr textarea{width:100%;min-width:0;font-size:14px;border:.5px solid var(--bd);border-radius:var(--rs);padding:5px 8px;background:var(--bg2);color:var(--tx)}
+.fr textarea{resize:vertical;min-height:56px}
+.fr textarea.auto-grow{resize:none;overflow-y:hidden}
+.fr-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fr-row>.fr{min-width:0}
+.mbtns{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;flex-wrap:wrap}
+.mbtns button{font-size:14px;padding:5px 14px;border-radius:var(--rs);border:.5px solid var(--bd);cursor:pointer;background:none;color:var(--tx2)}
+.btn-p{background:var(--ac-bg)!important;color:var(--tx)!important;border-color:var(--ac)!important}
+.btn-d{color:var(--rd)!important;border-color:var(--rd-bd)!important}
+.btn-am{background:var(--am-bg)!important;color:var(--am)!important;border-color:var(--am-bd)!important}
+/* archive */
+.del-btn{font-size:12px;padding:4px 10px;border-radius:var(--rs);border:.5px solid var(--rd-bd);background:var(--rd-bg);color:var(--rd);cursor:pointer;white-space:nowrap}
+.del-btn:hover{filter:brightness(.96)}
+.arc-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:.75rem;flex-wrap:wrap}
+.arc-hdr-note{font-size:13px;color:var(--tx2);flex:1;min-width:0}
+.arc-delall-btn{font-size:12px;padding:4px 10px;border-radius:var(--rs);border:.5px solid var(--rd-bd);background:var(--rd-bg);color:var(--rd);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.arc-delall-btn:hover{filter:brightness(.96)}
+/* backup / import buttons */
+.backup-btn{font-size:13px;padding:6px 14px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-right:6px;margin-top:.5rem}
+.backup-btn:hover{background:var(--bg3)}
+.inv-toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:13px;padding:8px 18px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:9999;white-space:nowrap}
+.inv-toast.show{opacity:1}
+.gcal-note{font-size:12px;color:var(--tx3);line-height:1.6;margin:.5rem 0}
+.gcal-actions{display:flex;flex-wrap:wrap;gap:8px;margin:.75rem 0}
+.gcal-actions button:disabled{opacity:.5;cursor:default}
+.gcal-auto{display:flex;align-items:center;gap:7px;font-size:13px}
+.gcal-status{font-size:13px;line-height:1.6;margin-top:.75rem;overflow-wrap:anywhere;white-space:pre-wrap}
+.gcal-status[data-error="true"]{color:var(--rd)}
+.gcal-last{font-size:12px;color:var(--tx3);margin-top:.25rem}
+.gcal-setup{margin-top:1rem;font-size:13px}
+.gcal-setup summary{cursor:pointer}
+.gcal-client{display:flex;flex-direction:column;gap:6px;margin:.5rem 0}
+.gcal-client input{width:100%;padding:8px;border:.5px solid var(--bd);border-radius:var(--rs);background:var(--bg2);color:var(--tx)}
+.backup-sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:#DEAD54;flex:0 0 auto}
+#backup-shortcut[data-state="saved"] .backup-sync-dot,#backup-shortcut[data-state="ready"] .backup-sync-dot{background:#6FBD98}
+#backup-shortcut[data-state="saving"] .backup-sync-dot{background:#7AA7D9;box-shadow:0 0 0 3px rgba(122,167,217,.2)}
+#backup-shortcut[data-state="conflict"] .backup-sync-dot,#backup-shortcut[data-state="error"] .backup-sync-dot{background:#C86452}
+#backup-shortcut[data-state="permission"] .backup-sync-dot{background:#DEAD54}
+#backup-shortcut[data-state="unsupported"] .backup-sync-dot{background:#999}
+
+</style>
+</head>
+<body>
+<h2 class="sr-only">案件管理ダッシュボード</h2>
+<div class="top-bar">
+  <span style="font-size:16px;font-weight:500;color:var(--bg);opacity:.8">案件管理</span>
+  <div class="top-bar-actions">
+    <button type="button" class="sync-btn" id="google-transfer-shortcut" data-connected="false" title="Googleに接続してカレンダーへ転記" aria-label="Googleに接続してカレンダーへ転記"><span class="gcal-sync-dot" aria-hidden="true"></span><span class="gcal-shortcut-label">Google転記</span></button>
+    <button type="button" class="sync-btn" id="backup-shortcut" data-state="unconfigured" title="dashboard_sync.json を保存"><span class="backup-sync-dot" aria-hidden="true"></span><span class="backup-shortcut-label">JSON保存</span></button>
+    <button class="sync-btn" onclick="importBackup()" title="dashboard_sync.json を読み込む"><i class="ti ti-download"></i> 読み込み</button>
+  </div>
+</div>
+<div class="alert-bar a-amber" id="alert-pay"></div>
+<div class="alert-bar a-red" id="alert-dl"></div>
+<div id="today-panel-container"></div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('list',this)">案件一覧</button>
+  <button class="tab" onclick="switchTab('cal',this)">カレンダー</button>
+  <button class="tab" onclick="switchTab('archive',this)">アーカイブ <span id="arc-badge" style="display:none;background:var(--ac-bg);color:var(--tx);font-size:11px;padding:1px 6px;border-radius:20px;margin-left:3px"></span></button>
+  <button class="tab" onclick="switchTab('settings',this)">設定</button>
+</div>
+
+<!-- 案件一覧 -->
+<div class="tp active" id="tp-list">
+  <div class="list-toolbar">
+    <span style="font-size:12px;color:var(--tx2)">並び順：</span>
+    <button class="sort-btn active" onclick="setSort('deadline',this)">納期順</button>
+    <button class="sort-btn" onclick="setSort('status',this)">ステータス順</button>
+    <button class="sort-btn" onclick="setSort('received',this)">受付日順</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:.5rem">
+    <button class="add-btn" style="margin-top:0;width:auto;flex:1 1 auto;min-width:0" onclick="openModal(null)"><i class="ti ti-plus"></i> 新しい案件を追加</button>
+    <button class="add-btn" style="margin-top:0;width:auto;flex:0 0 auto;padding:.65rem 1rem" onclick="openImportOv()" title="ClaudeなどからコピーしたJSONを貼り付けて案件を追加"><i class="ti ti-clipboard-text"></i> インポート</button>
+  </div>
+  <div class="case-list" id="case-list" style="margin-top:.5rem"></div>
+</div>
+
+<!-- カレンダー -->
+<div class="tp" id="tp-cal">
+  <div class="cal-hdr">
+    <span class="cal-lbl" id="cal-lbl"></span>
+    <div class="cal-nav-btns">
+      <button onclick="prevMonth()"><i class="ti ti-chevron-left"></i> 前月</button>
+      <button onclick="goToday()">今月</button>
+      <button onclick="nextMonth()">次月 <i class="ti ti-chevron-right"></i></button>
+    </div>
+  </div>
+  <div class="cal-leg">
+    <span><span class="leg-dot" style="background:#C86452;border-left:2px solid #8E4030"></span>大ラフ</span>
+    <span><span class="leg-dot" style="background:#8260A0;border-left:2px solid #5B4078"></span>清書前ラフ</span>
+    <span><span class="leg-dot" style="background:#4D779D;border-left:2px solid #385878"></span>清書</span>
+    <span><span class="leg-dot" style="background:#668747;border-left:2px solid #506838"></span>レタッチ</span>
+    <span><span class="leg-dot" style="background:var(--gr-bg);border:.5px solid var(--gr)"></span>納期</span>
+    <span><span class="leg-dot" style="background:var(--am-bg);border:.5px solid var(--am-bd)"></span>支払期限・返信待ち</span>
+    <span><span class="leg-dot" style="background:repeating-linear-gradient(45deg,var(--bg3),var(--bg3) 2px,var(--bg2) 2px,var(--bg2) 4px)"></span>休日</span>
+  </div>
+  <div id="cal-container"></div>
+  <div style="font-size:11px;color:var(--tx3);margin-top:.5rem;font-style:italic">💡 マスの右上「休」をクリックでその日を休日にできます ／ 点線・斜体は「やむを得ず別ブロックに配置」を示します</div>
+</div>
+
+<!-- 設定 -->
+<div class="tp" id="tp-settings">
+  <div class="settings-wrap">
+    <div class="settings-section">
+      <h3><i class="ti ti-currency-yen" style="vertical-align:-2px;margin-right:5px"></i>基本料金</h3>
+      <div id="cfg-draw-active" class="draw-settings-list"></div>
+      <button type="button" class="reset-btn" onclick="addDrawSettingItem()"><i class="ti ti-plus"></i> 項目を追加</button>
+      <details id="cfg-draw-hidden-wrap">
+        <summary class="draw-hidden-summary">非表示の項目</summary>
+        <div id="cfg-draw-hidden" class="draw-settings-list" style="margin-top:5px"></div>
+      </details>
+    </div>
+    <div class="settings-section">
+      <h3><i class="ti ti-plus" style="vertical-align:-2px;margin-right:5px"></i>オプション料金</h3>
+      <div class="settings-row"><label>新規キャラクターデザイン</label><input type="number" id="cfg-priceNC" onchange="saveCfg()"><span class="unit">円〜</span></div>
+      <div class="settings-row"><label>背景あり（描き込み）</label><input type="number" id="cfg-priceBG" onchange="saveCfg()"><span class="unit">円〜</span></div>
+    </div>
+    <div class="settings-section">
+      <h3><i class="ti ti-percent" style="vertical-align:-2px;margin-right:5px"></i>加算率</h3>
+      <div class="settings-row"><label>配信（YouTube/Twitch等）</label><input type="number" id="cfg-rateStream" onchange="saveCfg()"><span class="unit">%</span></div>
+      <div class="settings-row"><label>グッズ制作・販売</label><input type="number" id="cfg-rateGoods" onchange="saveCfg()"><span class="unit">%</span></div>
+      <div class="settings-row"><label>掲載不可（非公開）</label><input type="number" id="cfg-ratePrivate" onchange="saveCfg()"><span class="unit">%</span></div>
+      <div class="settings-row"><label>PayPal 手数料</label><input type="number" id="cfg-ratePaypal" onchange="saveCfg()"><span class="unit">%</span></div>
+    </div>
+    <div class="settings-section">
+      <h3><i class="ti ti-calendar" style="vertical-align:-2px;margin-right:5px"></i>期日・スケジュール設定</h3>
+      <div class="settings-row"><label>支払期限（納期から自動計算）</label><input type="number" id="cfg-paydueDays" onchange="saveCfg()"><span class="unit">日前</span></div>
+      <div class="settings-row"><label>催促リマインダー</label><input type="number" id="cfg-remindDays" onchange="saveCfg()"><span class="unit">日前</span></div>
+      <div class="settings-row"><label>業務日の日付変更時刻</label><input type="number" id="cfg-businessDayStartHour" onchange="saveCfg()" min="0" max="23"><span class="unit">時</span></div>
+      <div style="border-top:.5px dashed var(--bd);padding-top:.75rem;margin-top:.5rem"></div>
+      <div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:.5rem"><i class="ti ti-clock" style="vertical-align:-2px;margin-right:4px;font-size:14px"></i>作業時間ブロック（カレンダー自動配置用）</div>
+      <div class="settings-row"><label>朝〜昼の作業時間</label><input type="number" id="cfg-morningHours" onchange="saveCfg()" min="1" max="12"><span class="unit">時間</span></div>
+      <div class="settings-row"><label>夜の作業時間</label><input type="number" id="cfg-nightHours" onchange="saveCfg()" min="1" max="12"><span class="unit">時間</span></div>
+      <div class="settings-row"><label>基準時給（作業量計算）</label><input type="number" id="cfg-hourlyRate" onchange="saveCfg()" min="100" step="100"><span class="unit">円/時</span></div>
+      <div style="border-top:.5px dashed var(--bd);padding-top:.75rem;margin-top:.5rem"></div>
+      <div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:.5rem"><i class="ti ti-scale" style="vertical-align:-2px;margin-right:4px;font-size:14px"></i>工程ごとの作業比重</div>
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:.5rem;line-height:1.5">比率で計算されるため、数値の大小は気にせず「他工程の何倍か」のイメージで入力してください。例：50/80/110/80 = 清書がやや重め</div>
+      <div class="settings-row"><label>大ラフ（朝優先）</label><input type="number" id="cfg-weightRough" onchange="saveCfg()" min="1" max="500"><span class="unit">比重</span></div>
+      <div class="settings-row"><label>清書前ラフ（任意）</label><input type="number" id="cfg-weightLine" onchange="saveCfg()" min="1" max="500"><span class="unit">比重</span></div>
+      <div class="settings-row"><label>清書</label><input type="number" id="cfg-weightClean" onchange="saveCfg()" min="1" max="500"><span class="unit">比重</span></div>
+      <div class="settings-row"><label>レタッチ（任意）</label><input type="number" id="cfg-weightRetouch" onchange="saveCfg()" min="1" max="500"><span class="unit">比重</span></div>
+      <div style="border-top:.5px dashed var(--bd);padding-top:.75rem;margin-top:.5rem"></div>
+      <div class="settings-row" style="align-items:flex-start"><label style="padding-top:6px">定休日（毎週固定）</label><div id="cfg-holidays" style="display:flex;gap:5px;flex-wrap:wrap;padding-top:3px"></div></div>
+      <div class="settings-row"><label>返信待ち期間</label><input type="number" id="cfg-waitDays" onchange="saveCfg()" min="1" max="30"><span class="unit">日（カレンダーに表示）</span></div>
+    </div>
+    <div class="settings-section" id="icloud-backup-settings"></div>
+    <div class="settings-section" id="google-drive-ai-settings"></div>
+    <div class="settings-section" id="google-calendar-settings"></div>
+    <button class="reset-btn" onclick="resetCfg()"><i class="ti ti-refresh"></i> 設定をデフォルトに戻す</button>
+  </div>
+</div>
+
+<!-- アーカイブ -->
+<div class="tp" id="tp-archive">
+  <div class="arc-hdr">
+    <div class="arc-hdr-note">アーカイブ済みの案件。「一覧に戻す」でいつでも復元できます。</div>
+    <button id="arc-delall-btn" class="arc-delall-btn" onclick="deleteAllArchive()" style="display:none"><i class="ti ti-trash"></i> 全件削除</button>
+  </div>
+  <div class="arc-list" id="arc-list"></div>
+  <div id="arc-empty" style="font-size:14px;color:var(--tx2);padding:.5rem 0;display:none">アーカイブに案件はありません</div>
+</div>
+
+<!-- 案件編集モーダル -->
+<dialog class="overlay" id="overlay">
+<div class="modal">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+    <span style="font-size:15px;font-weight:500" id="modal-title">新しい案件</span>
+    <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;color:var(--tx2);font-size:18px"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-tabs">
+    <button class="modal-tab active" onclick="switchMTab('basic',this)">依頼情報</button>
+    <button class="modal-tab" onclick="switchMTab('detail',this)">詳細</button>
+  </div>
+
+  <!-- ===== 依頼情報タブ（基本情報 + 料金・支払いを統合） ===== -->
+  <div class="mp active" id="mp-basic">
+    <div class="fr-row"><div class="fr"><label>依頼者名</label><input id="m-name" type="text" placeholder="ハンドルネーム等"></div><div class="fr"><label>案件名</label><input id="m-project-name" type="text" placeholder="例：記念イラスト"></div></div>
+    <div class="fr"><label>連絡先</label><input id="m-contact" type="text" placeholder="X: @xxx / メールアドレス"></div>
+    <!-- 見積もり計算 -->
+    <div style="background:var(--bg);border-radius:var(--rs);padding:.75rem .9rem;margin-bottom:.9rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">
+        <div style="font-size:13px;font-weight:500;color:var(--tx)"><i class="ti ti-calculator" style="vertical-align:-2px;margin-right:5px"></i>見積もり計算</div>
+        <button onclick="clearEst()" style="font-size:11px;padding:2px 8px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--bg2);color:var(--tx3);cursor:pointer"><i class="ti ti-trash" style="font-size:11px;vertical-align:-1px;margin-right:3px"></i>クリア</button>
+      </div>
+      <div class="est-sec" style="margin-bottom:.75rem">
+        <div class="sl">描写範囲（複数追加可）</div>
+        <div id="chars-con"></div>
+        <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <button type="button" class="add-char-btn" onclick="addChar()"><i class="ti ti-plus" style="font-size:13px"></i> 基本料金項目を追加</button>
+          <button type="button" class="add-char-btn" onclick="addCustom()"><i class="ti ti-pencil" style="font-size:13px"></i> その他（任意金額）</button>
+        </div>
+      </div>
+      <div class="est-sec" style="margin-bottom:.75rem">
+        <div class="sl">オプション</div>
+        <div class="tgl-row"><div style="flex:1"><div class="tgl-lbl">背景あり（描き込み）</div><div class="tgl-sub" id="lbl-bg">+¥3,000〜</div><div id="bg-price-row" style="display:none;align-items:center;gap:5px;margin-top:4px"><span style="font-size:12px;color:var(--tx3)">+¥</span><input type="number" id="e-bg-price" style="width:80px;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:2px 6px;background:var(--bg2);color:var(--tx)" oninput="calcEst()" min="0"><span style="font-size:12px;color:var(--tx3)">〜</span></div></div><label class="tgl"><input type="checkbox" id="e-bg" onchange="toggleBGOpt()"><span class="sw"></span></label></div>
+        <div class="tgl-row"><div style="flex:1"><div class="tgl-lbl">新規キャラクターデザイン</div><div class="tgl-sub" id="lbl-nc">+¥6,000〜</div><div id="nc-price-row" style="display:none;align-items:center;gap:5px;margin-top:4px"><span style="font-size:12px;color:var(--tx3)">+¥</span><input type="number" id="e-nc-price" style="width:80px;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:2px 6px;background:var(--bg2);color:var(--tx)" oninput="calcEst()" min="0"><span style="font-size:12px;color:var(--tx3)">〜 / 1人</span></div></div><label class="tgl"><input type="checkbox" id="e-nc" onchange="toggleNCOpt()"><span class="sw"></span></label></div>
+      </div>
+      <div class="est-sec" style="margin-bottom:.75rem">
+        <div class="sl">使用用途（複数選択可・加算率は合算）</div>
+        <div class="chip-group" id="e-usg">
+          <span class="chip" data-rate="0" data-label="SNSアイコン・個人利用" onclick="toggleChip(this,'eu')">SNSアイコン・個人利用</span>
+          <span class="chip" data-rate="30" data-label="配信（YouTube/Twitch等）" onclick="toggleChip(this,'eu')">配信（YouTube/Twitch等）</span>
+          <span class="chip" data-rate="100" data-label="グッズ制作・販売" onclick="toggleChip(this,'eu')">グッズ制作・販売</span>
+          <span class="chip" data-rate="0" data-other="eu" onclick="toggleChip(this,'eu')">その他</span>
+        </div>
+        <div id="e-usg-other-wrap" style="display:none;margin-top:5px;gap:6px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="e-usg-other-label" placeholder="用途名（例：同人誌）" style="font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 8px;background:var(--bg2);color:var(--tx);width:160px" oninput="calcEst()">
+          <input type="number" id="e-usg-other-rate" placeholder="加算率" min="0" style="font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 8px;background:var(--bg2);color:var(--tx);width:72px" oninput="calcEst()">
+          <span style="font-size:13px;color:var(--tx3)">%</span>
+        </div>
+      </div>
+      <div class="est-sec" style="margin-bottom:.25rem">
+        <div class="sl">お見積もり</div>
+        <div class="breakdown" id="e-breakdown" style="background:var(--bg2)"></div>
+        <div id="e-discount-row" style="display:none;align-items:center;gap:6px;padding:5px 10px;background:var(--bg3);border-radius:var(--rs);margin-top:3px;font-size:13px">
+          <span style="flex:1;color:var(--tx2)">割引</span>
+          <span style="color:var(--tx3)">-¥</span>
+          <input type="number" id="e-discount" min="0" step="1" value="0" style="width:80px;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:2px 6px;background:var(--bg2);color:var(--tx);text-align:right" oninput="setManualDiscount()">
+          <button onclick="resetDiscount()" title="自動計算値に戻す" style="font-size:11px;padding:2px 7px;border-radius:var(--rs);border:.5px solid var(--bd);background:var(--bg2);color:var(--tx3);cursor:pointer">自動</button>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <span style="font-size:12px;color:var(--tx3);letter-spacing:.03em">合計（請求金額）</span>
+          <div class="big-price" id="e-total" style="font-size:22px">¥0</div>
+        </div>
+      </div>
+    </div>
+    <!-- 納品形式 -->
+    <div class="fr">
+      <label>納品形式（複数選択可）</label>
+      <div class="chip-group" id="m-fmt-chips">
+        <span class="chip" onclick="toggleChip(this,'mf')">PNG</span><span class="chip" onclick="toggleChip(this,'mf')">JPG</span><span class="chip" onclick="toggleChip(this,'mf')">PSD</span><span class="chip" onclick="toggleChip(this,'mf')">clip</span>
+      </div>
+    </div>
+    <!-- 料金・支払い情報 -->
+    <div class="fr-row">
+      <div class="fr"><label>料金（円）</label><input id="m-price" type="number" placeholder="例：15000"></div>
+      <div class="fr">
+        <label>支払い方法<span id="lbl-paypal-note" style="display:none;font-size:11px;color:var(--am);margin-left:6px">+5% 自動加算</span></label>
+        <select id="m-payment" onchange="togglePayOther()">
+          <option value="">選択</option>
+          <option value="銀行振込">銀行振込</option>
+          <option value="PayPal">PayPal</option>
+          <option value="PayPay">PayPay</option>
+          <option value="__other__">その他</option>
+        </select>
+        <input class="other-inp" id="m-payment-other" type="text" placeholder="支払い方法を入力" style="margin-top:4px">
+      </div>
+    </div>
+    <!-- 希望納期 -->
+    <div class="fr"><label>希望納期</label><input id="m-deadline" type="date" onchange="autoPayDue()"></div>
+    <!-- ポートフォリオ掲載可否（一番下） -->
+    <div class="fr" style="margin-top:.25rem">
+      <label style="font-size:12px;color:var(--tx3);letter-spacing:.05em;font-weight:500;text-transform:uppercase">ポートフォリオ掲載可否</label>
+      <div class="chip-group" id="e-pf-chips" style="margin-top:.35rem">
+        <span class="chip" data-pf="yes"  onclick="togglePfChip(this)">可</span>
+        <span class="chip" data-pf="anon" onclick="togglePfChip(this)">匿名なら可</span>
+        <span class="chip" data-pf="no"   onclick="togglePfChip(this)" id="e-pf-no-chip">不可（+20%）</span>
+        <span class="chip" data-pf="other" onclick="togglePfChip(this)">その他</span>
+      </div>
+      <div id="e-pf-other-wrap" style="display:none;margin-top:5px;gap:6px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="e-pf-other-label" placeholder="条件名（例：リリース後掲載可）" style="font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 8px;background:var(--bg2);color:var(--tx);width:200px" oninput="calcEst()">
+        <input type="number" id="e-pf-other-rate" placeholder="加算率" min="0" style="font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 8px;background:var(--bg2);color:var(--tx);width:72px" oninput="calcEst()">
+        <span style="font-size:13px;color:var(--tx3)">%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 詳細タブ ===== -->
+  <div class="mp" id="mp-detail">
+    <div class="fr-row">
+      <div class="fr"><label>受付日</label><input id="m-received" type="date"></div>
+      <div class="fr"><label id="paydue-label">支払い期限（14日前）</label><input id="m-paydue" type="date"></div>
+    </div>
+    <div class="fr-row">
+      <div class="fr"><label>制作状態（工程1〜4）</label><select id="m-status"><option value="progress">進行中</option><option value="wait">確認待ち</option></select></div>
+      <div class="fr"><label>工程</label><select id="m-step" onchange="updateWorkStatusUI()"><option value="1">大ラフ</option><option value="2">清書前ラフ</option><option value="3">清書</option><option value="4">レタッチ</option><option value="5">納品済み</option></select></div>
+    </div>
+    <div class="fr-row">
+      <div class="fr"><label>支払条件</label><select id="m-payment-terms" onchange="updatePaymentUI(true)"><option value="unknown">不明・未設定</option><option value="prepaid">前払い</option><option value="postpaid">後払い</option></select></div>
+      <div class="fr"><label>入金状況</label><select id="m-payment-status"><option value="unpaid">未入金</option><option value="paid">入金済み</option></select></div>
+    </div>
+    <div class="fr-row">
+      <div class="fr">
+        <label>修正回数</label>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <input id="m-revision" type="number" min="0" step="1" value="0" style="width:88px;font-size:13px;border:.5px solid var(--bd);border-radius:var(--rs);padding:3px 6px;background:var(--bg2)">
+          <span style="font-size:13px;color:var(--tx2)">回</span>
+        </div>
+      </div>
+    </div>
+    <div class="fr"><label>依頼詳細・キャラクター情報</label><textarea id="m-detail" class="auto-grow" placeholder="キャラクター詳細、ポーズ、雰囲気など（参考資料URLもこちらに記入）" style="min-height:80px" oninput="autoGrowTextarea(this)"></textarea></div>
+    <div class="fr"><label>メモ・特記事項</label><textarea id="m-memo" class="auto-grow" placeholder="依頼者の要望、注意事項など" oninput="autoGrowTextarea(this)"></textarea></div>
+    <div class="detail-actions">
+      <div class="detail-data-actions">
+        <button type="button" class="case-json-btn" id="btn-copy-case" onclick="copyCurrentCaseJson()" title="この案件だけのJSONをクリップボードにコピーします"><i class="ti ti-copy"></i> JSONコピー</button>
+        <label class="detail-company-toggle" title="敬称が「様」から「御中」になります">
+          <span>企業依頼</span>
+          <span class="tgl"><input type="checkbox" id="m-is-company"><span class="sw"></span></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="mbtns">
+    <button class="btn-d" id="btn-del" onclick="deleteCase()" style="display:none"><i class="ti ti-trash"></i> 削除</button>
+    <button onclick="closeModal()">キャンセル</button>
+    <button class="btn-p" onclick="saveCase()"><i class="ti ti-check"></i> 保存</button>
+  </div>
+</div>
+</dialog>
+
+<!-- JSONペーストインポート用 -->
+<dialog class="overlay" id="import-overlay">
+<div class="modal">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+    <span style="font-size:15px;font-weight:500">案件JSONを貼り付けてインポート</span>
+    <button onclick="closeImportOv()" style="background:none;border:none;cursor:pointer;color:var(--tx2);font-size:18px"><i class="ti ti-x"></i></button>
+  </div>
+  <div style="font-size:12px;color:var(--tx2);margin-bottom:.6rem;line-height:1.5">
+    Claudeなどで生成した案件JSON（<code style="font-size:11px;background:var(--bg);padding:0 4px;border-radius:3px">cases</code> 配列を含むオブジェクト）を貼り付けてください。<br>
+    <span style="color:var(--tx3)">※ 既存の案件は保持され、貼り付けた案件が<strong style="color:var(--tx2)">追加</strong>されます。</span>
+  </div>
+  <textarea id="import-json-area" placeholder='{"cases":[{...}]}' style="width:100%;height:240px;font-family:monospace;font-size:12px;padding:.6rem;border:.5px solid var(--bd);border-radius:var(--rs);background:var(--bg);color:var(--tx);resize:vertical;box-sizing:border-box"></textarea>
+  <div id="import-status" style="font-size:12px;margin-top:.5rem;min-height:1.2em"></div>
+  <div class="mbtns">
+    <button onclick="closeImportOv()">キャンセル</button>
+    <button class="btn-p" onclick="applyImportJson()"><i class="ti ti-download"></i> 追加する</button>
+  </div>
+</div>
+</dialog>
+
+<script src="case-state-core.js?v=1"></script>
+<script src="calendar-sync-core.js?v=68"></script>
+<script src="calendar-sync-ui.js?v=69"></script>
+<script src="backup-file-sync.js?v=3"></script>
+<script>
+let googleCalendarSync=null;
+let dashboardBackupSync=null;
+let dashboardAiSync=null;
+function notifyBackupChange(){dashboardBackupSync?.changed();dashboardAiSync?.changed();}
+function notifyCalendarChange(options){googleCalendarSync?.changed(options);notifyBackupChange();}
+// ===== DEFAULT SETTINGS =====
+const DEF_DRAW_ITEMS = [
+  {id:'sd',label:'SDキャラクター（2〜3頭身）',coverage:'SDキャラクター',price:6000,hidden:false},
+  {id:'face',label:'顔のみ',coverage:'顔のみ',price:7000,hidden:false},
+  {id:'bust',label:'バストアップ',coverage:'バストアップ',price:8500,hidden:false},
+  {id:'full',label:'全身（5〜7頭身）',coverage:'全身',price:10000,hidden:false}
+];
+const DEF_CFG = {priceSD:6000,priceFace:7000,priceBust:8500,priceFull:10000,priceNC:6000,priceBG:3000,rateStream:30,rateGoods:100,ratePrivate:20,ratePaypal:5,paydueDays:14,remindDays:2,businessDayStartHour:5,dailyHours:4,morningHours:5,nightHours:4,hourlyRate:1800,holidayWeekdays:[0],waitDays:7,weightRough:100,weightLine:100,weightClean:100,weightRetouch:100};
+const CFG_KEYS = ['priceSD','priceFace','priceBust','priceFull','priceNC','priceBG','rateStream','rateGoods','ratePrivate','ratePaypal','paydueDays','remindDays','businessDayStartHour','dailyHours','morningHours','nightHours','hourlyRate','waitDays','weightRough','weightLine','weightClean','weightRetouch'];
+
+function clampHour(v){const n=parseInt(v);return Number.isFinite(n)?Math.max(0,Math.min(23,n)):5;}
+function makeDrawId(){return'draw_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);}
+function shortDrawLabel(label){return String(label||'').replace(/（.*?）/g,'').trim();}
+function buildLegacyDrawItems(c){
+  return DEF_DRAW_ITEMS.map(item=>{
+    const key=item.id==='sd'?'priceSD':item.id==='face'?'priceFace':item.id==='bust'?'priceBust':'priceFull';
+    return{...item,price:parseInt(c[key])||item.price};
+  });
+}
+function normalizeDrawItems(items,cfg){
+  const src=Array.isArray(items)&&items.length?items:buildLegacyDrawItems(cfg||DEF_CFG);
+  const used=new Set();
+  const out=src.map((item,i)=>{
+    const base=DEF_DRAW_ITEMS.find(d=>d.id===item.id)||(!item.id?DEF_DRAW_ITEMS[i]:{})||{};
+    let id=String(item.id||base.id||makeDrawId());
+    if(used.has(id))id=makeDrawId();
+    used.add(id);
+    const label=String(item.label||item.l||base.label||'名称未設定').trim()||'名称未設定';
+    const coverage=String(item.coverage||base.coverage||shortDrawLabel(label)||label).trim();
+    return{id,label,coverage,price:Math.max(0,parseInt(item.price??item.p??base.price)||0),hidden:!!item.hidden};
+  });
+  if(!out.some(item=>!item.hidden)&&out.length)out[0].hidden=false;
+  return out.length?out:buildLegacyDrawItems(cfg||DEF_CFG);
+}
+function syncLegacyDrawPrices(c){
+  const items=normalizeDrawItems(c.drawItems,c);
+  c.drawItems=items;
+  const byId=Object.fromEntries(items.map(item=>[item.id,item]));
+  c.priceSD=parseInt(byId.sd?.price)||c.priceSD||DEF_CFG.priceSD;
+  c.priceFace=parseInt(byId.face?.price)||c.priceFace||DEF_CFG.priceFace;
+  c.priceBust=parseInt(byId.bust?.price)||c.priceBust||DEF_CFG.priceBust;
+  c.priceFull=parseInt(byId.full?.price)||c.priceFull||DEF_CFG.priceFull;
+  return c;
+}
+function getCfg(){
+  try{
+    const raw=JSON.parse(localStorage.getItem('cfg')||'{}');
+    const c={...DEF_CFG,...raw};
+    c.businessDayStartHour=clampHour(c.businessDayStartHour);
+    c.drawItems=normalizeDrawItems(raw.drawItems,c);
+    return syncLegacyDrawPrices(c);
+  }catch(e){
+    const c={...DEF_CFG};
+    c.drawItems=normalizeDrawItems(null,c);
+    return syncLegacyDrawPrices(c);
+  }
+}
+function saveCfg(){
+  const c=getCfg();
+  CFG_KEYS.forEach(k=>{const el=document.getElementById('cfg-'+k);if(el)c[k]=parseInt(el.value)||0;});
+  c.drawItems=collectDrawItemsFromSettings(c.drawItems);
+  // 定休日チェックボックス
+  const hw=[];
+  document.querySelectorAll('#cfg-holidays input[type=checkbox]').forEach(cb=>{if(cb.checked)hw.push(parseInt(cb.value));});
+  c.holidayWeekdays=hw;
+  saveCfgObject(c);
+}
+function saveCfgObject(c,opt={}){
+  syncLegacyDrawPrices(c);
+  localStorage.setItem('cfg',JSON.stringify(c));
+  updateSettingsLabels();
+  renderCharsEst();calcEst();
+  activeBusinessDay=todayYmd();
+  scheduleBusinessDayRefresh();
+  notifyCalendarChange();
+  // カレンダーが表示中なら再描画
+  if(document.getElementById('tp-cal').classList.contains('active'))renderCal();
+  render();
+}
+function collectDrawItemsFromSettings(fallback){
+  const rows=document.querySelectorAll('.draw-setting-row');
+  if(!rows.length)return normalizeDrawItems(fallback,getCfg());
+  return[...rows].map(row=>({
+    id:row.dataset.drawId||makeDrawId(),
+    label:row.querySelector('[data-draw-label]')?.value.trim()||'名称未設定',
+    coverage:row.dataset.drawCoverage||'',
+    price:parseInt(row.querySelector('[data-draw-price]')?.value)||0,
+    hidden:row.dataset.drawHidden==='1'
+  }));
+}
+function makeDrawSettingRow(item){
+  const row=document.createElement('div');
+  row.className='draw-setting-row';
+  row.dataset.drawId=item.id;
+  row.dataset.drawHidden=item.hidden?'1':'0';
+  row.dataset.drawCoverage=item.coverage||'';
+  const name=document.createElement('input');
+  name.type='text';name.value=item.label;name.dataset.drawLabel='1';name.onchange=saveCfg;
+  const price=document.createElement('input');
+  price.type='number';price.value=item.price||'';price.min='0';price.dataset.drawPrice='1';price.onchange=saveCfg;
+  const unit=document.createElement('span');
+  unit.className='unit';unit.textContent='円〜';
+  const btn=document.createElement('button');
+  btn.type='button';btn.className='draw-item-btn';
+  btn.textContent=item.hidden?'復元':'削除';
+  btn.onclick=()=>item.hidden?restoreDrawSettingItem(item.id):hideDrawSettingItem(item.id);
+  row.appendChild(name);row.appendChild(price);row.appendChild(unit);row.appendChild(btn);
+  return row;
+}
+function renderDrawSettings(items=getCfg().drawItems){
+  const active=document.getElementById('cfg-draw-active');
+  const hidden=document.getElementById('cfg-draw-hidden');
+  const wrap=document.getElementById('cfg-draw-hidden-wrap');
+  if(!active||!hidden)return;
+  const list=normalizeDrawItems(items,getCfg());
+  active.innerHTML='';hidden.innerHTML='';
+  list.filter(item=>!item.hidden).forEach(item=>active.appendChild(makeDrawSettingRow(item)));
+  list.filter(item=>item.hidden).forEach(item=>hidden.appendChild(makeDrawSettingRow(item)));
+  if(wrap)wrap.style.display=list.some(item=>item.hidden)?'block':'none';
+}
+function addDrawSettingItem(){
+  const c=getCfg();
+  c.drawItems=collectDrawItemsFromSettings(c.drawItems);
+  c.drawItems.push({id:makeDrawId(),label:'新規項目',coverage:'',price:0,hidden:false});
+  saveCfgObject(c);
+  renderDrawSettings(c.drawItems);
+}
+function hideDrawSettingItem(id){
+  const c=getCfg();
+  c.drawItems=collectDrawItemsFromSettings(c.drawItems);
+  if(c.drawItems.filter(item=>!item.hidden).length<=1){alert('描写範囲の項目は最低1つ必要です。');return;}
+  const item=c.drawItems.find(item=>item.id===id);
+  if(item)item.hidden=true;
+  saveCfgObject(c);
+  renderDrawSettings(c.drawItems);
+}
+function restoreDrawSettingItem(id){
+  const c=getCfg();
+  c.drawItems=collectDrawItemsFromSettings(c.drawItems);
+  const item=c.drawItems.find(item=>item.id===id);
+  if(item)item.hidden=false;
+  saveCfgObject(c);
+  renderDrawSettings(c.drawItems);
+}
+function resetCfg(){if(!confirm('設定をデフォルトに戻しますか？'))return;localStorage.removeItem('cfg');loadSettingsUI();updateSettingsLabels();renderCharsEst();calcEst();activeBusinessDay=todayYmd();scheduleBusinessDayRefresh();render();if(document.getElementById('tp-cal').classList.contains('active'))renderCal();notifyCalendarChange();}
+function loadSettingsUI(){
+  const c=getCfg();
+  CFG_KEYS.forEach(k=>{const el=document.getElementById('cfg-'+k);if(el)el.value=c[k];});
+  renderDrawSettings(c.drawItems);
+  // 定休日チェックボックス生成
+  const holEl=document.getElementById('cfg-holidays');
+  if(holEl){
+    const DHS=['日','月','火','水','木','金','土'];
+    const hw=c.holidayWeekdays||[];
+    holEl.innerHTML=DHS.map((d,i)=>`<label style="display:flex;align-items:center;gap:3px;font-size:13px;padding:4px 9px;border:.5px solid var(--bd);border-radius:20px;background:var(--bg2);cursor:pointer;${hw.includes(i)?'background:var(--ac-bg);border-color:var(--ac);':''}"><input type="checkbox" value="${i}" ${hw.includes(i)?'checked':''} onchange="saveCfg()" style="margin:0">${d}</label>`).join('');
+  }
+}
+
+function updateSettingsLabels(){
+  const c=getCfg();
+  const eln=document.getElementById('lbl-nc');if(eln)eln.textContent='+¥'+c.priceNC.toLocaleString()+'〜';
+  const elb=document.getElementById('lbl-bg');if(elb)elb.textContent='+¥'+c.priceBG.toLocaleString()+'〜';
+  const epfno=document.getElementById('e-pf-no-chip');if(epfno)epfno.textContent='不可（+'+c.ratePrivate+'%）';
+  const pdl=document.getElementById('paydue-label');if(pdl)pdl.textContent='支払い期限（'+c.paydueDays+'日前）';
+}
+function getDRAW(){return getCfg().drawItems.filter(item=>!item.hidden).map(item=>({id:item.id,l:item.label,p:item.price,coverage:shortDrawLabel(item.label)||item.label,legacyCoverage:item.coverage||''}));}
+function drawCoverageLabel(item){return item?(shortDrawLabel(item.l)||item.l):'';}
+function findDrawIndexByLabel(label,DRAW=getDRAW()){
+  const target=String(label||'').trim();
+  return DRAW.findIndex(item=>target===item.l||target===drawCoverageLabel(item)||target===item.legacyCoverage);
+}
+const STEP_OPTIONS=[['1','大ラフ'],['2','清書前ラフ'],['3','清書'],['4','レタッチ'],['5','納品済み']];
+const CaseState=window.DashboardCaseState;
+const S_CLS={in_progress:'b-prog',awaiting_client:'b-wait',delivered_awaiting_payment:'b-delivered',completed:'b-complete',archived_other:'b-archived-other'};
+
+// ===== DATA =====
+let cases=[],archive=[];
+try{cases=JSON.parse(localStorage.getItem('cases')||'[]');}catch(e){}
+try{archive=JSON.parse(localStorage.getItem('archive')||'[]');}catch(e){}
+// 古い保存データを現在の状態モデルへ、推測せず移行する
+function makeCaseId(){return'case_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));}
+function normalizeCase(c){
+  return CaseState.normalizeCase(c,{makeId:makeCaseId});
+}
+function reconcileCaseCollections(){
+  const reconciled=CaseState.reconcileCollections(cases,archive,{makeId:makeCaseId});
+  cases=reconciled.cases;
+  archive=reconciled.archive;
+  return reconciled.moved;
+}
+const storedCaseState=JSON.stringify({cases,archive});
+reconcileCaseCollections();
+if(storedCaseState!==JSON.stringify({cases,archive})){
+  localStorage.setItem('cases',JSON.stringify(cases));
+  localStorage.setItem('archive',JSON.stringify(archive));
+}
+let editIdx=null,editIsArchive=false,sortMode='deadline',backupImportInput=null;
+let calYear,calMonth;
+function getBusinessDayStartHour(){return clampHour(getCfg().businessDayStartHour);}
+function getBusinessDate(base=new Date()){
+  const d=new Date(base);
+  d.setHours(d.getHours()-getBusinessDayStartHour());
+  return d;
+}
+function todayYmd(){return ymd(getBusinessDate());}
+const initialBusinessDate=getBusinessDate();
+calYear=initialBusinessDate.getFullYear();calMonth=initialBusinessDate.getMonth();
+
+
+function saveAll(calendarOptions){reconcileCaseCollections();localStorage.setItem('cases',JSON.stringify(cases));localStorage.setItem('archive',JSON.stringify(archive));render();if(document.getElementById('tp-cal').classList.contains('active'))renderCal();notifyCalendarChange(calendarOptions);}
+// 値を配列に正規化（文字列/null/undefinedにも対応）
+function toArr(v){return Array.isArray(v)?v:(v?[v]:[]);}
+function dL(d){return d?daysBetween(todayYmd(),d):null;}
+function calendarTodayYmd(base=new Date()){return ymd(base);}
+function dLDeadlineAlert(d){return d?daysBetween(calendarTodayYmd(),d):null;}
+function fmtD(v){if(!v)return'未設定';const d=new Date((String(v).length===10?v+'T12:00:00':v));return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+(d.getDate()).toString().padStart(2,'0');}
+function fmtDs(v){if(!v)return'—';const d=new Date(v+'T12:00:00');return(d.getMonth()+1)+'/'+(d.getDate());}
+function isRemind(c){const pd=c.paydue;if(!pd||CaseState.isPaid(c))return false;const d=dL(pd);return d!==null&&d>=0&&d<=getCfg().remindDays;}
+function isOverdue(c){const pd=c.paydue;if(!pd||CaseState.isPaid(c))return false;return dL(pd)<0;}
+
+// ===== TAB =====
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');document.getElementById('tp-'+id).classList.add('active');
+  if(id==='cal')renderCal();
+  if(id==='archive')renderArchive();
+  if(id==='settings')loadSettingsUI();
+}
+function switchMTab(id,el){
+  document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mp').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');document.getElementById('mp-'+id).classList.add('active');
+  if(id==='detail')requestAnimationFrame(()=>autoGrowTextareas(document.getElementById('mp-detail')));
+}
+function autoGrowTextarea(el){
+  if(!el)return;
+  el.style.height='auto';
+  const minHeight=parseFloat(getComputedStyle(el).minHeight)||0;
+  el.style.height=Math.max(el.scrollHeight,minHeight)+'px';
+}
+function autoGrowTextareas(root=document){
+  root.querySelectorAll('textarea.auto-grow').forEach(autoGrowTextarea);
+}
+window.addEventListener('resize',()=>autoGrowTextareas());
+function setSort(mode,el){sortMode=mode;document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');render();}
+
+// ===== CHIP HELPERS =====
+function toggleChip(el,g){
+  if(el.dataset.other){
+    const was=el.classList.contains('on');el.classList.toggle('on');
+    if(g==='eu'){const w=document.getElementById('e-usg-other-wrap');if(w)w.style.display=was?'none':'flex';}
+  } else el.classList.toggle('on');
+  if(g==='eu')calcEst();
+}
+
+// ポートフォリオ掲載可否チップ（見積もり計算内）
+function togglePfChip(el){
+  const was=el.classList.contains('on');
+  document.querySelectorAll('#e-pf-chips .chip').forEach(c=>c.classList.remove('on'));
+  if(!was){
+    el.classList.add('on');
+    document.getElementById('e-pf-other-wrap').style.display=el.dataset.pf==='other'?'flex':'none';
+  } else {
+    document.getElementById('e-pf-other-wrap').style.display='none';
+  }
+  calcEst();
+}
+
+function togglePayOther(){
+  const v=document.getElementById('m-payment').value;
+  document.getElementById('m-payment-other').classList.toggle('show',v==='__other__');
+  const note=document.getElementById('lbl-paypal-note');
+  if(note)note.style.display=(v==='PayPal')?'inline':'none';
+  calcEst();
+}
+function autoPayDue(){
+  const dl=document.getElementById('m-deadline').value;if(!dl)return;
+  const terms=document.getElementById('m-payment-terms').value;
+  if(terms==='unknown')return;
+  if(terms==='postpaid'){
+    document.getElementById('m-paydue').value=addMonthsClamped(dl,2);
+  }else{
+    const d=new Date(dl+'T12:00:00');d.setDate(d.getDate()-getCfg().paydueDays);
+    document.getElementById('m-paydue').value=d.toISOString().split('T')[0];
+  }
+}
+function addMonthsClamped(dateStr,months){
+  const src=new Date(dateStr+'T12:00:00');
+  const day=src.getDate();
+  const target=new Date(src.getFullYear(),src.getMonth()+months+1,0,12);
+  target.setDate(Math.min(day,target.getDate()));
+  return target.getFullYear()+'-'+String(target.getMonth()+1).padStart(2,'0')+'-'+String(target.getDate()).padStart(2,'0');
+}
+function updatePaymentUI(recalculate){
+  const terms=document.getElementById('m-payment-terms').value;
+  const label=document.getElementById('paydue-label');
+  if(label)label.textContent=terms==='postpaid'?'支払い期限（納期の2ヶ月後）':terms==='prepaid'?'支払い期限（'+getCfg().paydueDays+'日前）':'支払い期限（手動設定）';
+  if(recalculate)autoPayDue();
+}
+function updateWorkStatusUI(){
+  const field=document.getElementById('m-status');
+  if(field)field.disabled=document.getElementById('m-step').value==='5';
+}
+function getFmtArr(){return[...document.querySelectorAll('#m-fmt-chips .chip.on')].map(c=>c.textContent.trim());}
+
+// 見積もり計算のPFチップから portfolio 値を取得
+function getPfValFromEst(){
+  const pfChip=document.querySelector('#e-pf-chips .chip.on');
+  if(!pfChip)return'';
+  const pf=pfChip.dataset.pf;
+  if(pf==='yes')return'可（SNS・HP掲載可）';
+  if(pf==='anon')return'匿名なら可';
+  if(pf==='no')return'不可（+20%）';
+  if(pf==='other')return document.getElementById('e-pf-other-label').value.trim()||'その他';
+  return'';
+}
+
+function getPayVal(){const v=document.getElementById('m-payment').value;if(v==='__other__')return document.getElementById('m-payment-other').value.trim()||'その他';return v;}
+
+// ===== SORTED CASES =====
+function sortedCases(){
+  const pinDeliveredAwaitingPayment=list=>[
+    ...list.filter(c=>CaseState.deriveOverallStatus(c,false)!=='delivered_awaiting_payment'),
+    ...list.filter(c=>CaseState.deriveOverallStatus(c,false)==='delivered_awaiting_payment')
+  ];
+  if(sortMode==='deadline'){
+    const byDeadline=list=>{
+      const overdue=list.filter(c=>isOverdue(c)).sort((a,b)=>new Date(a.deadline+'T12:00:00')-new Date(b.deadline+'T12:00:00'));
+      const normal=list.filter(c=>!isOverdue(c)&&c.deadline).sort((a,b)=>new Date(a.deadline+'T12:00:00')-new Date(b.deadline+'T12:00:00'));
+      return[...normal,...overdue,...list.filter(c=>!c.deadline)];
+    };
+    const workApproved=cases.filter(c=>CaseState.isPaid(c)||CaseState.isPostpaid(c));
+    const unpaid=cases.filter(c=>!CaseState.isPaid(c)&&!CaseState.isPostpaid(c));
+    return pinDeliveredAwaitingPayment([...byDeadline(workApproved),...byDeadline(unpaid)]);
+  }
+  if(sortMode==='status'){const o={in_progress:0,awaiting_client:1,delivered_awaiting_payment:2};return pinDeliveredAwaitingPayment([...cases].sort((a,b)=>(o[CaseState.deriveOverallStatus(a,false)]??9)-(o[CaseState.deriveOverallStatus(b,false)]??9)));}
+  return pinDeliveredAwaitingPayment([...cases].sort((a,b)=>{if(!a.received)return 1;if(!b.received)return -1;return new Date(b.received+'T12:00:00')-new Date(a.received+'T12:00:00');}));
+}
+
+function escapeCaseLabel(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
+const STATUSES=[['progress','進行中'],['wait','確認待ち']];
+
+// ===== RENDER =====
+function render(){
+  const cfg=getCfg();
+  renderTodayPanel();
+  const remC=cases.filter(c=>isRemind(c));
+  const ap=document.getElementById('alert-pay');
+  if(remC.length){ap.classList.add('show');ap.innerHTML='<i class="ti ti-bell-ringing" style="vertical-align:-2px;margin-right:6px"></i>支払期限'+cfg.remindDays+'日以内：'+remC.map(c=>'「'+(c.name||'—')+'」あと'+dL(c.paydue)+'日').join('、');}
+  else ap.classList.remove('show');
+  const dlU=cases.filter(c=>c.deadline&&!CaseState.isDelivered(c)&&dLDeadlineAlert(c.deadline)>=0&&dLDeadlineAlert(c.deadline)<=7);
+  const ad=document.getElementById('alert-dl');
+  if(dlU.length){ad.classList.add('show');ad.innerHTML='<i class="ti ti-alert-triangle" style="vertical-align:-2px;margin-right:6px"></i>締切まで：'+dlU.map(c=>'「'+(c.name||'—')+'」あと'+dLDeadlineAlert(c.deadline)+'日').join('、');}
+  else ad.classList.remove('show');
+  const ab=document.getElementById('arc-badge');
+  if(archive.length){ab.style.display='inline';ab.textContent=archive.length;}else ab.style.display='none';
+  const list=document.getElementById('case-list');
+  const sorted=sortedCases();
+  if(!sorted.length){list.innerHTML='<div style="font-size:14px;color:var(--tx2);padding:.5rem 0">案件がまだありません</div>';return;}
+  list.innerHTML=sorted.map(c=>{
+    const i=cases.indexOf(c);
+    const overall=CaseState.deriveOverallStatus(c,false);
+    const delivered=CaseState.isDelivered(c);
+    const dl=dLDeadlineAlert(c.deadline);const isU=!delivered&&dl!==null&&dl<=7;
+    const dlStr=c.deadline?(delivered?'納期 '+fmtDs(c.deadline):fmtDs(c.deadline)+'（あと'+dl+'日）'):'納期未設定';
+    const covA=toArr(c.coverage);
+    const si=String(c.step||'1');
+    const revisionCount=parseInt(c.revisionCount)||0;
+    const remind=isRemind(c),overdue=isOverdue(c);
+    const pdLeft=c.paydue?dL(c.paydue):null;
+    const pdBdg=CaseState.isPaid(c)?`<span class="badge b-paid">入金済み</span>`:overdue?`<span class="badge b-overdue">超過${Math.abs(pdLeft)}日</span>`:remind?`<span class="badge b-remind"><i class="ti ti-bell" style="font-size:10px;vertical-align:-1px;margin-right:2px"></i>${pdLeft}日前</span>`:CaseState.isPostpaid(c)?`<span class="badge b-postpaid">後払い</span>`:`<span class="badge b-unpaid">未入金</span>`;
+    const sButtons=delivered?`<span style="font-size:12px;color:var(--tx2);padding:2px 6px">制作完了</span>`:STATUSES.map(([sv,sl])=>`<button class="qb qb-s${c.workStatus===sv?' on':''}" onclick="quickSetStatus(event,${i},'${sv}')">${sl}</button>`).join('');
+    const stepButtons=STEP_OPTIONS.map(([sv,sl])=>`<button class="qb qb-p${si===sv?' on':''}" onclick="quickSetStep(event,${i},'${sv}')">${sl}</button>`).join('');
+    const paidCtrl=CaseState.isPaid(c)?`<span style="font-size:12px;color:var(--gr);margin-left:auto;padding:2px 6px">✓ 入金済み</span>`:`<button class="qb-paid-btn" onclick="quickSetPaid(event,${i})"><i class="ti ti-circle-check" style="font-size:10px;vertical-align:-1px;margin-right:3px"></i>入金済み</button>`;
+    const priceStr=c.price?'¥'+parseInt(c.price).toLocaleString():'';
+    return`<div class="case-card${remind?' remind-active':''}${overall==='delivered_awaiting_payment'?' delivered-awaiting-payment':''}" id="card-${i}" style="cursor:pointer">
+      <div class="card-top"><span class="badge ${S_CLS[overall]||'b-wait'}">${CaseState.overallStatusLabel(overall)}</span>${pdBdg}<span class="card-name" title="${escapeCaseLabel([c.name,c.projectName].filter(Boolean).join(' / '))}">${escapeCaseLabel(c.name||'（名前未入力）')}${c.projectName?`<span class="card-project">${escapeCaseLabel(c.projectName)}</span>`:''}</span><span class="card-dl${isU?' urg':''}">${dlStr}</span>${priceStr?`<span class="card-price">${priceStr}</span>`:''}</div>
+      <div class="card-quick">
+        <div class="qb-row"><span class="qb-lbl">状態</span>${sButtons}${paidCtrl}</div>
+        <div class="qb-row qb-row-bottom"><span class="qb-lbl">工程</span>${stepButtons}<span class="qb-card-actions"><span class="qb-rev-group"><span class="qb-lbl">修正</span><button class="rc-btn" onclick="adjRev(event,${i},-1)">−</button><span class="rc-val">${revisionCount}回</span><button class="rc-btn" onclick="adjRev(event,${i},1)">＋</button></span><button class="qb-arc" onclick="archiveCase(event,${i})" title="アーカイブ"><i class="ti ti-archive"></i></button></span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function archiveCase(e,i){
+  e.stopPropagation();
+  const c=cases[i];if(!c)return;
+  const message='「'+(c.name||'この案件')+'」は未完了または未入金です。\n「アーカイブ済み（未完了）」として移動しますか？';
+  if(!confirm(message))return;
+  const item=cases.splice(i,1)[0];item.archiveReason='manual';archive.push(item);saveAll();
+}
+function restoreCase(i){
+  const item=archive[i];if(!item)return;
+  if(CaseState.deriveOverallStatus(item,true)==='completed'){
+    alert('納品済み・入金済みの案件は完了扱いです。再開する場合は、まずアーカイブ内で案件を編集し、実際の工程に変更してください。');
+    return;
+  }
+  delete item.archiveReason;
+  cases.push(archive.splice(i,1)[0]);saveAll();renderArchive();
+}
+function renderArchive(){
+  const list=document.getElementById('arc-list');const empty=document.getElementById('arc-empty');
+  const delAllBtn=document.getElementById('arc-delall-btn');
+  if(!archive.length){list.innerHTML='';empty.style.display='block';if(delAllBtn)delAllBtn.style.display='none';return;}
+  empty.style.display='none';
+  if(delAllBtn)delAllBtn.style.display='inline-flex';
+  list.innerHTML=archive.map((c,i)=>{
+    const overall=CaseState.deriveOverallStatus(c,true);
+    const dlStr=c.deadline?'納期 '+fmtDs(c.deadline):'納期未設定';
+    const priceStr=c.price?'¥'+parseInt(c.price).toLocaleString():'';
+    const pdBdg=CaseState.isPaid(c)?`<span class="badge b-paid">入金済み</span>`:CaseState.isPostpaid(c)?`<span class="badge b-postpaid">後払い・未入金</span>`:`<span class="badge b-unpaid">未入金</span>`;
+    return`<div class="arc-card" id="arc-card-${i}">
+      <div class="arc-info">
+        <div class="card-top"><span class="badge ${S_CLS[overall]||'b-archived-other'}">${CaseState.overallStatusLabel(overall)}</span>${pdBdg}<span class="card-name" title="${escapeCaseLabel([c.name,c.projectName].filter(Boolean).join(' / '))}">${escapeCaseLabel(c.name||'（名前未入力）')}${c.projectName?`<span class="card-project">${escapeCaseLabel(c.projectName)}</span>`:''}</span><span class="card-dl">${dlStr}</span>${priceStr?`<span class="card-price">${priceStr}</span>`:''}</div>
+      </div>
+      <button class="restore-btn" onclick="restoreCase(${i})"><i class="ti ti-arrow-back-up"></i> 一覧に戻す</button>
+      <button class="del-btn" onclick="deleteFromArchive(${i})"><i class="ti ti-trash"></i> 完全削除</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== MODAL =====
+function openModal(idx,fromArchive){
+  editIdx=idx;editIsArchive=!!fromArchive;const isE=idx!==null&&idx!==undefined;
+  document.getElementById('modal-title').textContent=isE?(editIsArchive?'アーカイブ案件を編集':'案件を編集'):'新しい案件';
+  document.getElementById('btn-del').style.display=isE?'block':'none';
+  document.getElementById('btn-copy-case').style.display=isE?'inline-flex':'none';
+  document.querySelectorAll('.modal-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('.mp').forEach((p,i)=>p.classList.toggle('active',i===0));
+  const resetChips=()=>{
+    document.querySelectorAll('#m-fmt-chips .chip').forEach(c=>c.classList.remove('on'));
+    document.getElementById('m-payment').value='';document.getElementById('m-payment-other').classList.remove('show');document.getElementById('m-payment-other').value='';
+  };
+  const resetPfChips=()=>{
+    document.querySelectorAll('#e-pf-chips .chip').forEach(c=>c.classList.remove('on'));
+    document.getElementById('e-pf-other-wrap').style.display='none';
+    document.getElementById('e-pf-other-label').value='';
+    document.getElementById('e-pf-other-rate').value='';
+  };
+  const resetEstimate=()=>{
+    discountManual=false;inferDiscountManual=false;
+    const discEl=document.getElementById('e-discount');if(discEl)discEl.value=0;
+    estChars=[{id:0,di:1}];estCustoms=[];nci=1;ncc=1;
+    document.getElementById('e-nc').checked=false;
+    document.getElementById('e-bg').checked=false;
+    document.getElementById('e-nc-price').value='';
+    document.getElementById('e-bg-price').value='';
+    document.getElementById('nc-price-row').style.display='none';
+    document.getElementById('bg-price-row').style.display='none';
+    document.getElementById('lbl-nc').style.display='block';
+    document.getElementById('lbl-bg').style.display='block';
+    document.querySelectorAll('#e-usg .chip').forEach(c=>c.classList.remove('on'));
+    document.getElementById('e-usg-other-wrap').style.display='none';
+    document.getElementById('e-usg-other-label').value='';
+    document.getElementById('e-usg-other-rate').value='';
+    resetPfChips();
+  };
+  resetChips();resetEstimate();
+  const c=isE?normalizeCase(editIsArchive?archive[idx]:cases[idx]):normalizeCase({received:todayYmd(),paymentTerms:'unknown',paymentStatus:'unpaid',workStatus:'wait',step:'1',revisionCount:'0'});
+  document.getElementById('m-name').value=c.name||'';
+  document.getElementById('m-project-name').value=c.projectName||'';
+  document.getElementById('m-contact').value=c.contact||'';
+  document.getElementById('m-received').value=c.received||'';
+  document.getElementById('m-deadline').value=c.deadline||'';
+  document.getElementById('m-paydue').value=c.paydue||'';
+  document.getElementById('m-step').value=c.step||'1';
+  document.getElementById('m-status').value=c.workStatus||'progress';
+  updateWorkStatusUI();
+  document.getElementById('m-detail').value=c.detail||'';
+  document.getElementById('m-price').value=c.price||'';
+  document.getElementById('m-payment-terms').value=c.paymentTerms||'unknown';
+  document.getElementById('m-payment-status').value=c.paymentStatus||'unpaid';
+  updatePaymentUI(false);
+  document.getElementById('m-revision').value=c.revisionCount||'0';
+  document.getElementById('m-memo').value=c.memo||'';
+  document.getElementById('m-is-company').checked=c.isCompany||false;
+  if(isE){
+    const knownPay=['銀行振込','PayPal','PayPay'];
+    if(knownPay.includes(c.paymentMethod)){document.getElementById('m-payment').value=c.paymentMethod;}
+    else if(c.paymentMethod){document.getElementById('m-payment').value='__other__';document.getElementById('m-payment-other').classList.add('show');document.getElementById('m-payment-other').value=c.paymentMethod;}
+    const fmtA=toArr(c.format);
+    document.querySelectorAll('#m-fmt-chips .chip').forEach(ch=>{if(fmtA.includes(ch.textContent.trim()))ch.classList.add('on');});
+    restoreEstimate(c);
+  }
+  renderCharsEst();calcEst();
+  const ov=document.getElementById('overlay');
+  ov.showModal();
+}
+
+// 案件のestimateDataから見積もり計算UIを復元
+function restoreEstimate(c){
+  const ed=c.estimateData;
+  if(!ed){
+    const covA=toArr(c.coverage);
+    if(covA.length){
+      const DRAW=getDRAW();
+      estChars=[];estCustoms=[];
+      covA.forEach(label=>{
+        const idx=findDrawIndexByLabel(label,DRAW);
+        if(idx>=0){estChars.push({id:nci++,di:idx});}
+        else{estCustoms.push({id:ncc++,name:label,price:0});}
+      });
+      if(estChars.length===0&&estCustoms.length===0)estChars=[{id:nci++,di:1}];
+    }
+    if(c.bg==='描き込みあり'){document.getElementById('e-bg').checked=true;toggleBGOpt();}
+    if(c.chara==='新規キャラクター'){document.getElementById('e-nc').checked=true;toggleNCOpt();}
+    const usgA=toArr(c.usage);
+    document.querySelectorAll('#e-usg .chip:not([data-other])').forEach(ch=>{if(usgA.includes(ch.dataset.label))ch.classList.add('on');});
+    const otherUsg=usgA.filter(v=>!['SNSアイコン・個人利用','配信（YouTube/Twitch等）','グッズ制作・販売'].includes(v));
+    if(otherUsg.length){const oc=document.querySelector('#e-usg .chip[data-other]');if(oc){oc.classList.add('on');document.getElementById('e-usg-other-wrap').style.display='flex';document.getElementById('e-usg-other-label').value=otherUsg.join('・');}}
+    // portfolio 復元
+    restorePfChip(c.portfolio, null);
+    return;
+  }
+  estChars=[];estCustoms=[];nci=1;ncc=1;
+  const DRAW=getDRAW();
+  (ed.items||[]).forEach(item=>{
+    const idx=findDrawIndexByLabel(item.label,DRAW);
+    if(idx>=0){estChars.push({id:nci++,di:idx});}
+    else{estCustoms.push({id:ncc++,name:item.label,price:item.price||0});}
+  });
+  if(estChars.length===0&&estCustoms.length===0)estChars=[{id:nci++,di:1}];
+  if(ed.nc){document.getElementById('e-nc').checked=true;document.getElementById('e-nc-price').value=ed.nc.price||'';toggleNCOpt();}
+  if(ed.bg){document.getElementById('e-bg').checked=true;document.getElementById('e-bg-price').value=ed.bg.price||'';toggleBGOpt();}
+  if(ed.usageRates&&ed.usageRates.length){
+    const otherRates=[];
+    ed.usageRates.forEach(r=>{
+      const chip=[...document.querySelectorAll('#e-usg .chip:not([data-other])')].find(c=>c.dataset.label===r.label);
+      if(chip)chip.classList.add('on');
+      else otherRates.push(r);
+    });
+    if(otherRates.length){
+      const oc=document.querySelector('#e-usg .chip[data-other]');
+      if(oc){oc.classList.add('on');document.getElementById('e-usg-other-wrap').style.display='flex';
+        document.getElementById('e-usg-other-label').value=otherRates.map(r=>r.label).join('・');
+        document.getElementById('e-usg-other-rate').value=otherRates.reduce((s,r)=>s+(r.rate||0),0);
+      }
+    }
+  }
+  // portfolio 復元
+  restorePfChip(c.portfolio, ed.privateRate);
+  // discount 復元
+  const discEl=document.getElementById('e-discount');
+  if(discEl)discEl.value=ed.discount||0;
+  if(typeof ed.discountManual==='boolean')discountManual=ed.discountManual;
+  else inferDiscountManual=true;
+}
+
+function restorePfChip(portfolio, privateRate){
+  if(!portfolio)return;
+  const chips=document.querySelectorAll('#e-pf-chips .chip');
+  document.querySelectorAll('#e-pf-chips .chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('e-pf-other-wrap').style.display='none';
+  if(portfolio==='可（SNS・HP掲載可）'){chips[0]?.classList.add('on');}
+  else if(portfolio==='匿名なら可'){chips[1]?.classList.add('on');}
+  else if(portfolio.startsWith('不可')){chips[2]?.classList.add('on');}
+  else{
+    chips[3]?.classList.add('on');
+    document.getElementById('e-pf-other-wrap').style.display='flex';
+    document.getElementById('e-pf-other-label').value=portfolio;
+    if(privateRate!=null&&privateRate>0)document.getElementById('e-pf-other-rate').value=privateRate;
+  }
+}
+
+function closeModal(){document.getElementById('overlay').close();editIsArchive=false;}
+function deleteCase(){
+  if(editIdx===null)return;
+  if(editIsArchive){
+    if(!confirm('「'+(archive[editIdx].name||'この案件')+'」を完全に削除しますか？\nこの操作は取り消せません。'))return;
+    archive.splice(editIdx,1);closeModal();saveAll();renderArchive();
+    return;
+  }
+  if(!confirm('「'+(cases[editIdx].name||'この案件')+'」を削除しますか？'))return;
+  cases.splice(editIdx,1);closeModal();saveAll();
+}
+function collectCaseFormData(base={}){
+  const c={...base};
+  c.name=document.getElementById('m-name').value.trim();
+  c.projectName=document.getElementById('m-project-name').value.trim();
+  c.contact=document.getElementById('m-contact').value.trim();
+  c.received=document.getElementById('m-received').value;
+  c.deadline=document.getElementById('m-deadline').value;
+  c.paydue=document.getElementById('m-paydue').value;
+  c.isCompany=document.getElementById('m-is-company').checked;
+  c.step=document.getElementById('m-step').value;
+  c.workStatus=c.step==='5'?null:document.getElementById('m-status').value;
+  c.detail=document.getElementById('m-detail').value.trim();
+  c.price=document.getElementById('m-price').value;
+  c.paymentMethod=getPayVal();
+  c.paymentTerms=document.getElementById('m-payment-terms').value;
+  c.paymentStatus=document.getElementById('m-payment-status').value;
+  // 入金済みに変更されたタイミングで paidDate を記録
+  if(c.paymentStatus==='paid'&&!c.paidDate)c.paidDate=todayYmd();
+  if(c.paymentStatus!=='paid')c.paidDate='';
+  c.revisionCount=String(Math.max(0,parseInt(document.getElementById('m-revision').value)||0));
+  c.memo=document.getElementById('m-memo').value.trim();
+  c.format=getFmtArr();
+  // ポートフォリオ掲載可否（見積もり計算のチップから取得）
+  c.portfolio=getPfValFromEst();
+  // 見積もり計算から描写範囲・使用用途・背景・キャラデザを派生
+  const DRAW=getDRAW();
+  const covFromEst=estChars.map(ch=>drawCoverageLabel(DRAW[ch.di])).filter(Boolean);
+  estCustoms.forEach(cu=>{if(cu.name&&cu.name.trim())covFromEst.push(cu.name.trim());});
+  c.coverage=covFromEst;
+  const usgFromEst=[...document.querySelectorAll('#e-usg .chip.on:not([data-other])')].map(ch=>ch.dataset.label);
+  const uOther=document.querySelector('#e-usg .chip[data-other].on');
+  if(uOther){const ol=document.getElementById('e-usg-other-label').value.trim();if(ol)usgFromEst.push(ol);}
+  c.usage=usgFromEst;
+  c.bg=document.getElementById('e-bg').checked?'描き込みあり':'透過・単色・簡易';
+  c.chara=document.getElementById('e-nc').checked?'新規キャラクター':'既存キャラクター';
+  // 構造化見積もりデータを保存
+  if(window._estData)c.estimateData=window._estData;
+  return normalizeCase(c);
+}
+function saveCase(){
+  const isNew=editIdx===null;
+  const previousWorkStatus=!isNew&&!editIsArchive?cases[editIdx]?.workStatus:null;
+  const c=collectCaseFormData(isNew?{}:(editIsArchive?archive[editIdx]:cases[editIdx]));
+  if(!editIsArchive&&CaseState.deriveOverallStatus(c,false)==='completed'&&
+      !confirm('「'+(c.name||'この案件')+'」を納品済み・入金済みとしてアーカイブに移動しますか？'))return;
+  if(isNew){
+    c.id=makeCaseId();
+    cases.push(c);
+  }else if(editIsArchive){
+    archive[editIdx]=c;
+  }else{
+    cases[editIdx]=c;
+  }
+  const wasArchive=editIsArchive;
+  const workStatusChanged=!isNew&&!wasArchive&&previousWorkStatus!==c.workStatus;
+  closeModal();saveAll(workStatusChanged?{delayMs:60000}:undefined);
+  if(wasArchive)renderArchive();
+}
+
+// ===== ESTIMATE =====
+let estChars=[{id:0,di:1}],estCustoms=[],nci=1,ncc=1;
+let discountManual=false,inferDiscountManual=false;
+function addChar(){estChars.push({id:nci++,di:1});renderCharsEst();calcEst();}
+function addCustom(){estCustoms.push({id:ncc++,name:'',price:0});renderCharsEst();calcEst();}
+function removeChar(id){if(estChars.length+estCustoms.length<=1)return;estChars=estChars.filter(c=>c.id!==id);renderCharsEst();calcEst();}
+function removeCustom(id){if(estChars.length+estCustoms.length<=1)return;estCustoms=estCustoms.filter(c=>c.id!==id);renderCharsEst();calcEst();}
+function toggleNCOpt(){
+  const on=document.getElementById('e-nc').checked;
+  document.getElementById('nc-price-row').style.display=on?'flex':'none';
+  document.getElementById('lbl-nc').style.display=on?'none':'block';
+  calcEst();
+}
+function toggleBGOpt(){
+  const on=document.getElementById('e-bg').checked;
+  document.getElementById('bg-price-row').style.display=on?'flex':'none';
+  document.getElementById('lbl-bg').style.display=on?'none':'block';
+  calcEst();
+}
+function renderCharsEst(){
+  const DRAW=getDRAW();
+  const con=document.getElementById('chars-con');if(!con)return;
+  con.innerHTML='';
+  if(!DRAW.length)return;
+  estChars.forEach(c=>{
+    if(!DRAW[c.di])c.di=0;
+    const row=document.createElement('div');row.className='char-row';
+    const sel=document.createElement('select');sel.onchange=e=>{c.di=parseInt(e.target.value);const pr=row.querySelector('.char-price');if(pr)pr.textContent='¥'+DRAW[c.di].p.toLocaleString();calcEst();};
+    DRAW.forEach((o,i)=>{const op=document.createElement('option');op.value=i;op.textContent=o.l+'　¥'+o.p.toLocaleString()+'〜';if(i===c.di)op.selected=true;sel.appendChild(op);});
+    const pr=document.createElement('span');pr.className='char-price';pr.id='cp-'+c.id;pr.textContent='¥'+DRAW[c.di].p.toLocaleString();
+    const rb=document.createElement('button');rb.className='rm-btn';rb.textContent='×';rb.setAttribute('aria-label','削除');rb.onclick=()=>removeChar(c.id);
+    if(estChars.length+estCustoms.length<=1)rb.style.visibility='hidden';
+    row.appendChild(sel);row.appendChild(pr);row.appendChild(rb);con.appendChild(row);
+  });
+  estCustoms.forEach(c=>{
+    const row=document.createElement('div');row.className='char-row';
+    const ni=document.createElement('input');ni.type='text';ni.className='custom-name-input';ni.placeholder='項目名（例：立ち絵）';ni.value=c.name;ni.oninput=e=>{c.name=e.target.value;calcEst();};
+    const pi=document.createElement('input');pi.type='number';pi.className='custom-price-input';pi.placeholder='金額';pi.value=c.price||'';pi.oninput=e=>{c.price=parseInt(e.target.value)||0;calcEst();};
+    const lbl=document.createElement('span');lbl.style.cssText='font-size:13px;color:var(--tx3);white-space:nowrap';lbl.textContent='円〜';
+    const rb=document.createElement('button');rb.className='rm-btn';rb.textContent='×';rb.setAttribute('aria-label','削除');rb.onclick=()=>removeCustom(c.id);
+    if(estChars.length+estCustoms.length<=1)rb.style.visibility='hidden';
+    row.appendChild(ni);row.appendChild(pi);row.appendChild(lbl);row.appendChild(rb);con.appendChild(row);
+  });
+}
+
+// 2%以内に収まる最大桁まで丸める割引計算
+function smartDiscount(raw){
+  raw=Math.round(raw); // 浮動小数点誤差を除去してから処理
+  let result=raw;
+  for(let p=100;p<=100000;p*=10){
+    const rounded=Math.floor(raw/p)*p;
+    const discount=raw-rounded;
+    if(raw>0&&discount/raw<=0.02){result=rounded;}
+    else break;
+  }
+  return result;
+}
+
+function calcEst(updateDiscount=true){
+  const cfg=getCfg();
+  const DRAW=getDRAW();
+  estChars.forEach(c=>{if(!DRAW[c.di])c.di=0;});
+  const baseFixed=estChars.reduce((s,c)=>s+(DRAW[c.di]?.p||0),0);
+  const baseCustom=estCustoms.reduce((s,c)=>s+(parseInt(c.price)||0),0);
+  const base=baseFixed+baseCustom;
+  const nc=document.getElementById('e-nc').checked?(parseInt(document.getElementById('e-nc-price').value)||cfg.priceNC):0;
+  const bg=document.getElementById('e-bg').checked?(parseInt(document.getElementById('e-bg-price').value)||cfg.priceBG):0;
+  const sub=base+nc+bg;
+  const uSel=[...document.querySelectorAll('#e-usg .chip.on:not([data-other])')];
+  const uOther=document.querySelector('#e-usg .chip[data-other].on');
+  let uRate=uSel.reduce((s,c)=>s+parseInt(c.dataset.rate||0),0);
+  let uLbls=uSel.map(c=>c.dataset.label);
+  if(uOther){const or=parseInt(document.getElementById('e-usg-other-rate').value)||0;const ol=document.getElementById('e-usg-other-label').value.trim()||'その他';uRate+=or;uLbls.push(ol+(or?'(+'+or+'%)':''));}
+  const pfChip=document.querySelector('#e-pf-chips .chip.on');
+  let prR=0,pfLabelStr='';
+  if(pfChip){
+    if(pfChip.dataset.pf==='no'){prR=cfg.ratePrivate;pfLabelStr='掲載不可オプション';}
+    else if(pfChip.dataset.pf==='other'){
+      prR=parseInt(document.getElementById('e-pf-other-rate').value)||0;
+      pfLabelStr=document.getElementById('e-pf-other-label').value.trim()||'その他オプション';
+    }
+  }
+  const afterR=sub*(1+(uRate+prR)/100);
+  const pp=(document.getElementById('m-payment')?.value==='PayPal');
+  const rawTotal=pp?afterR*(1+cfg.ratePaypal/100):afterR;
+  const rawRounded=Math.round(rawTotal);
+  // 自動割引計算
+  const autoDisc=rawRounded-smartDiscount(rawRounded);
+  // 割引入力欄の表示制御
+  const discRow=document.getElementById('e-discount-row');
+  const discEl=document.getElementById('e-discount');
+  // 旧データは、保存済み割引額が現在の自動額と異なる場合に手動設定として引き継ぐ
+  if(inferDiscountManual){
+    discountManual=(Math.max(0,parseInt(discEl?.value)||0)!==autoDisc);
+    inferDiscountManual=false;
+  }
+  if(rawRounded>0){
+    if(discRow)discRow.style.display='flex';
+    if(updateDiscount&&!discountManual&&discEl)discEl.value=autoDisc;
+  }else{
+    if(discRow)discRow.style.display='none';
+    if(!discountManual&&discEl)discEl.value=0;
+  }
+  const userDisc=Math.max(0,parseInt(discEl?.value)||0);
+  const grand=Math.max(0,rawRounded-userDisc);
+  let rows='';
+  if(estChars.length===1&&estCustoms.length===0){rows+=br(DRAW[estChars[0].di].l,baseFixed);}
+  else{
+    estChars.forEach(c=>{rows+=br(DRAW[c.di].l,DRAW[c.di].p);});
+    estCustoms.forEach(c=>{if(c.price>0||c.name)rows+=br(c.name||'その他',parseInt(c.price)||0);});
+    if(estChars.length+estCustoms.length>1)rows+=br('描写範囲 小計',base);
+  }
+  if(nc)rows+=br('新規キャラクターデザイン',nc);if(bg)rows+=br('背景（描き込み）',bg);
+  if(uRate){const lbl=uLbls.length>1?uLbls.join('・')+'（合算）':uLbls[0];rows+=br('用途加算（'+lbl+'）+'+uRate+'%',Math.round(sub*uRate/100));}
+  if(prR)rows+=br(pfLabelStr+' +'+prR+'%',Math.round(sub*prR/100));
+  // PayPal手数料は rawRounded から逆算して整合性を保証（個別 Math.round による1円ズレを防止）
+  const ppAmount=pp?(rawRounded-Math.round(afterR)):0;
+  if(pp)rows+=br('PayPal 手数料 +'+cfg.ratePaypal+'%',ppAmount);
+  rows+=`<div class="brow tot"><span>小計</span><span>¥${rawRounded.toLocaleString()}</span></div>`;
+  document.getElementById('e-breakdown').innerHTML=rows;
+  document.getElementById('e-total').textContent='¥'+grand.toLocaleString();
+  window._estData={
+    items:[...estChars.map(c=>({label:DRAW[c.di].l,price:DRAW[c.di].p})),...estCustoms.filter(c=>c.price||c.name).map(c=>({label:c.name||'その他',price:parseInt(c.price)||0}))],
+    nc:document.getElementById('e-nc').checked?{label:'新規キャラクターデザイン',price:parseInt(document.getElementById('e-nc-price').value)||cfg.priceNC}:null,
+    bg:document.getElementById('e-bg').checked?{label:'背景（描き込み）',price:parseInt(document.getElementById('e-bg-price').value)||cfg.priceBG}:null,
+    subtotal:sub,
+    usageRates:uSel.map(c=>({label:c.dataset.label,rate:parseInt(c.dataset.rate||0)})).concat(uOther?[{label:document.getElementById('e-usg-other-label').value.trim()||'その他',rate:parseInt(document.getElementById('e-usg-other-rate').value)||0}]:[]),
+    pfLabel:pfLabelStr,
+    privateRate:prR,
+    afterRates:afterR,
+    paypal:pp,
+    paypalRate:cfg.ratePaypal,
+    paypalAmount:ppAmount,
+    discount:userDisc,
+    discountManual:discountManual,
+    grandTotal:grand
+  };
+  // 料金欄に自動反映（grand > 0 のときのみ）
+  if(grand>0){
+    const priceEl=document.getElementById('m-price');
+    if(priceEl)priceEl.value=grand;
+    // PayPal連動：見積もりでPayPal手数料ONなら支払い方法もPayPalに
+    if(document.getElementById('overlay').open){
+      const mp=document.getElementById('m-payment');
+      if(mp){
+        if(pp){mp.value='PayPal';document.getElementById('m-payment-other').classList.remove('show');}
+        else if(mp.value==='PayPal'){mp.value='';}
+      }
+    }
+  }
+}
+function br(l,a){return`<div class="brow"><span>${l}</span><span>¥${(a||0).toLocaleString()}</span></div>`;}
+
+function resetDiscount(){
+  const discEl=document.getElementById('e-discount');
+  if(discEl)discEl.value=0;
+  discountManual=false;inferDiscountManual=false;
+  calcEst(true);
+}
+
+function setManualDiscount(){
+  discountManual=true;inferDiscountManual=false;
+  calcEst(false);
+}
+
+// 見積もり計算をクリア
+function clearEst(){
+  if(!confirm('見積もり計算をクリアしますか？'))return;
+  estChars=[{id:nci++,di:1}];estCustoms=[];
+  document.getElementById('e-nc').checked=false;toggleNCOpt();
+  document.getElementById('e-bg').checked=false;toggleBGOpt();
+  document.querySelectorAll('#e-usg .chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('e-usg-other-wrap').style.display='none';
+  document.getElementById('e-usg-other-label').value='';
+  document.getElementById('e-usg-other-rate').value='';
+  document.querySelectorAll('#e-pf-chips .chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('e-pf-other-wrap').style.display='none';
+  document.getElementById('e-pf-other-label').value='';
+  document.getElementById('e-pf-other-rate').value='';
+  const discEl=document.getElementById('e-discount');if(discEl)discEl.value=0;
+  discountManual=false;inferDiscountManual=false;
+  renderCharsEst();calcEst();
+}
+
+function quickSetStatus(e,i,v){
+  e.stopPropagation();
+  if(!cases[i]||CaseState.isDelivered(cases[i]))return;
+  if(cases[i].workStatus===v)return;
+  cases[i].workStatus=v;saveAll({delayMs:60000});
+}
+function quickSetStep(e,i,v){
+  e.stopPropagation();
+  const c=cases[i];
+  if(!c)return;
+  if(v==='5'&&CaseState.isPaid(c)){
+    if(!confirm('「'+(c.name||'この案件')+'」を納品済みにして、アーカイブに移動しますか？'))return;
+  }
+  c.step=v;
+  c.workStatus=v==='5'?null:(c.workStatus||'progress');
+  saveAll();
+}
+function quickSetPaid(e,i){
+  e.stopPropagation();
+  const c=cases[i];
+  if(!c)return;
+  const shouldArchive=CaseState.isDelivered(c);
+  if(shouldArchive&&!confirm('「'+(c.name||'この案件')+'」を入金済みにして、アーカイブに移動しますか？'))return;
+  c.paymentStatus='paid';
+  if(!c.paidDate)c.paidDate=todayYmd();
+  saveAll();
+}
+
+function adjRev(e,i,delta){
+  e.stopPropagation();
+  cases[i].revisionCount=String(Math.max(0,(parseInt(cases[i].revisionCount)||0)+delta));
+  saveAll();
+}
+
+// ===== CALENDAR =====
+// 日付ユーティリティ
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function parseYmd(s){return new Date(s+'T12:00:00');}
+function addDays(s,n){const d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d);}
+function daysBetween(s1,s2){return Math.round((parseYmd(s2)-parseYmd(s1))/86400000);}
+
+// 予定は設定時刻に業務日を送り、カレンダーの「今日」は0時に送る
+let activeBusinessDay=todayYmd(),activeCalendarDay=calendarTodayYmd();
+let businessDayTimer=null,calendarDayTimer=null;
+function refreshBusinessDay(){
+  const nextBusinessDay=todayYmd();
+  if(nextBusinessDay!==activeBusinessDay){
+    const previous=parseYmd(activeBusinessDay);
+    const wasShowingCurrentMonth=calYear===previous.getFullYear()&&calMonth===previous.getMonth();
+    activeBusinessDay=nextBusinessDay;
+    if(wasShowingCurrentMonth){
+      const current=parseYmd(activeBusinessDay);
+      calYear=current.getFullYear();calMonth=current.getMonth();
+    }
+    render();
+      notifyCalendarChange({autoReconnect:false});
+    if(document.getElementById('tp-cal').classList.contains('active'))renderCal();
+  }
+  scheduleBusinessDayRefresh();
+}
+function scheduleBusinessDayRefresh(){
+  clearTimeout(businessDayTimer);
+  const current=new Date();
+  const next=new Date(current);
+  next.setHours(getBusinessDayStartHour(),0,0,0);
+  if(current>=next)next.setDate(next.getDate()+1);
+  businessDayTimer=setTimeout(refreshBusinessDay,next-current+250);
+}
+function refreshCalendarDay(){
+  const nextCalendarDay=calendarTodayYmd();
+  if(nextCalendarDay!==activeCalendarDay){
+    activeCalendarDay=nextCalendarDay;
+    render();
+    if(document.getElementById('tp-cal').classList.contains('active'))renderCal();
+  }
+  scheduleCalendarDayRefresh();
+}
+function scheduleCalendarDayRefresh(){
+  clearTimeout(calendarDayTimer);
+  const current=new Date();
+  const next=new Date(current);
+  next.setHours(0,0,0,0);
+  next.setDate(next.getDate()+1);
+  calendarDayTimer=setTimeout(refreshCalendarDay,next-current+250);
+}
+function refreshDateBoundaries(){
+  refreshBusinessDay();
+  refreshCalendarDay();
+}
+
+// スポット休日（マスクリックで設定）
+function getSpotHolidays(){try{return JSON.parse(localStorage.getItem('holidays')||'{}');}catch(e){return{};}}
+function toggleHoliday(e,dateStr){
+  e.stopPropagation();
+  const sh=getSpotHolidays();
+  if(sh[dateStr])delete sh[dateStr];else sh[dateStr]=true;
+  localStorage.setItem('holidays',JSON.stringify(sh));
+  renderCal();
+  notifyCalendarChange();
+}
+function isHoliday(dateStr,cfg){
+  const sh=getSpotHolidays();
+  if(sh[dateStr])return true;
+  const wd=parseYmd(dateStr).getDay();
+  return(cfg.holidayWeekdays||[]).includes(wd);
+}
+
+// 案件の「作業量」（円）を取得：基本料金部分のみ
+function getWorkValue(c){
+  if(c.estimateData&&c.estimateData.subtotal)return parseInt(c.estimateData.subtotal)||0;
+  // estimateData がない場合のフォールバック：price から加算率と手数料を逆算
+  const p=parseInt(c.price)||0;
+  if(!p)return 0;
+  return Math.round(p*0.65); // 概算：手数料・加算込みから素の作業料を推定
+}
+
+// 案件ごとの工程枠数を計算（比重ベース）
+function getCaseStepSlots(c){
+  const cfg=getCfg();
+  const wv=getWorkValue(c);
+  if(!wv)return null;
+  const wR=Math.max(1,parseInt(cfg.weightRough)||100);
+  const wL=Math.max(1,parseInt(cfg.weightLine)||100);
+  const wC=Math.max(1,parseInt(cfg.weightClean)||100);
+  const wT=Math.max(1,parseInt(cfg.weightRetouch)||100);
+  const wSum=wR+wL+wC+wT;
+  const morningCap=cfg.morningHours*cfg.hourlyRate;
+  const nightCap=cfg.nightHours*cfg.hourlyRate;
+  // 各工程の作業量
+  const vRough=wv*wR/wSum;
+  const vLine=wv*wL/wSum;
+  const vClean=wv*wC/wSum;
+  const vRetouch=wv*wT/wSum;
+  // 大ラフは朝〜昼枠、それ以外は昼夜の大きい方を基準に枠数を計算
+  return{
+    rough:Math.max(1,Math.ceil(vRough/morningCap)),
+    line:Math.max(1,Math.ceil(vLine/Math.max(morningCap,nightCap))),
+    clean:Math.max(1,Math.ceil(vClean/Math.max(morningCap,nightCap))),
+    retouch:Math.max(1,Math.ceil(vRetouch/Math.max(morningCap,nightCap))),
+    workValue:wv
+  };
+}
+
+// スケジュールマップ構築：日付→{morning, night, wait}
+// 各枠 {idx, kind, caseName, fallback:bool}
+// 工程の制約：各工程は前工程完了の翌日以降。同じ工程の複数枠は同日配置可。
+// 優先順位：締切までの余裕が少ない案件を優先。朝〜昼は大ラフを最優先し、その他工程は昼夜どちらでも配置。
+function buildScheduleMap(){
+  const cfg=getCfg();
+  const sched={};
+  const targets=cases.map((c,i)=>({c,i})).filter(o=>!CaseState.isDelivered(o.c)&&o.c.workStatus==='progress'&&o.c.deadline);
+  const today=todayYmd();
+
+  function ensureDay(d){if(!sched[d])sched[d]={morning:null,night:null,wait:[]};return sched[d];}
+
+  // 指定期間内の稼働日数（開始日・締切日を含む）
+  function workdaysLeft(startDate,deadline){
+    if(startDate>deadline)return 0;
+    let cur=startDate,count=0,safety=0;
+    while(cur<=deadline&&safety<3660){
+      if(!isHoliday(cur,cfg))count++;
+      cur=addDays(cur,1);
+      safety++;
+    }
+    return count;
+  }
+
+  // 案件ごとに、現在工程以降の残作業を状態として保持する
+  const states=[];
+  targets.forEach(({c,i})=>{
+    const slots=getCaseStepSlots(c);
+    if(!slots)return;
+    const si=parseInt(c.step)||1;
+    const stages=[
+      {kind:'rough',count:slots.rough,activeStep:1},
+      {kind:'line',count:slots.line,activeStep:2},
+      {kind:'clean',count:slots.clean,activeStep:3},
+      {kind:'retouch',count:slots.retouch,activeStep:4}
+    ].filter(st=>si<=st.activeStep).map(st=>({...st,remaining:st.count}));
+    if(!stages.length)return;
+    states.push({c,i,stages,stageIdx:0,availableFrom:today});
+  });
+
+  function remainingSlots(state){
+    let total=0;
+    for(let n=state.stageIdx;n<state.stages.length;n++)total+=state.stages[n].remaining;
+    return total;
+  }
+
+  // 余裕日数が小さい案件ほど優先。締切・登録順で安定させる。
+  function urgencyCompare(a,b,dateStr){
+    const slackA=workdaysLeft(dateStr,a.c.deadline)-remainingSlots(a);
+    const slackB=workdaysLeft(dateStr,b.c.deadline)-remainingSlots(b);
+    if(slackA!==slackB)return slackA-slackB;
+    const dlCmp=a.c.deadline.localeCompare(b.c.deadline);
+    if(dlCmp)return dlCmp;
+    return a.i-b.i;
+  }
+
+  function eligibleStates(dateStr){
+    return states.filter(state=>state.stageIdx<state.stages.length&&state.availableFrom<=dateStr&&state.c.deadline>=dateStr);
+  }
+
+  function assign(state,dateStr,slotName,isFallback){
+    const stage=state.stages[state.stageIdx];
+    ensureDay(dateStr)[slotName]={idx:state.i,kind:stage.kind,caseName:state.c.name||'—',fallback:isFallback};
+    stage.remaining--;
+    if(stage.remaining<=0){
+      state.stageIdx++;
+      // 次工程は前工程を終えた翌日から開始
+      state.availableFrom=addDays(dateStr,1);
+    }
+  }
+
+  const maxDeadline=targets.reduce((max,o)=>!max||o.c.deadline>max?o.c.deadline:max,'');
+  let date=today,safety=0;
+  while(maxDeadline&&date<=maxDeadline&&safety<3660){
+    safety++;
+    if(!isHoliday(date,cfg)){
+      // 朝〜昼：大ラフを必ず優先し、なければその他工程を配置
+      let eligible=eligibleStates(date);
+      let rough=eligible.filter(state=>state.stages[state.stageIdx].kind==='rough').sort((a,b)=>urgencyCompare(a,b,date));
+      let flexible=eligible.filter(state=>state.stages[state.stageIdx].kind!=='rough').sort((a,b)=>urgencyCompare(a,b,date));
+      const morningState=rough[0]||flexible[0];
+      if(morningState){
+        assign(morningState,date,'morning',false);
+      }
+
+      // 夜：その他工程を優先。大ラフしか残っていない場合だけ夜へフォールバック
+      eligible=eligibleStates(date);
+      flexible=eligible.filter(state=>state.stages[state.stageIdx].kind!=='rough').sort((a,b)=>urgencyCompare(a,b,date));
+      rough=eligible.filter(state=>state.stages[state.stageIdx].kind==='rough').sort((a,b)=>urgencyCompare(a,b,date));
+      const nightState=flexible[0]||rough[0];
+      if(nightState){
+        const nightKind=nightState.stages[nightState.stageIdx].kind;
+        assign(nightState,date,'night',nightKind==='rough');
+      }
+    }
+    date=addDays(date,1);
+  }
+
+  // 返信待ち期間
+  cases.forEach((c,i)=>{
+    if(!CaseState.isDelivered(c)&&c.workStatus==='wait'&&c.deadline){
+      const waitStart=todayYmd();
+      const waitEnd=addDays(waitStart,cfg.waitDays||7);
+      let cur=waitStart;
+      let safety=0;
+      while(cur<=waitEnd&&safety<35){
+        safety++;
+        ensureDay(cur).wait.push({idx:i,caseName:c.name||'—'});
+        cur=addDays(cur,1);
+      }
+    }
+  });
+  
+  return sched;
+}
+
+const TASK_LBL={rough:'大ラフ',line:'清書前ラフ',clean:'清書',retouch:'レタッチ'};
+const TASK_CLS={rough:'t-rough',line:'t-line',clean:'t-clean',retouch:'t-retouch'};
+function calendarCaseName(c){return String(c?.projectName||'').trim()||String(c?.name||'').trim()||'—';}
+function calendarTaskName(task){return calendarCaseName(cases[task.idx]);}
+
+function buildMonthGrid(year,month,calendarDate=new Date()){
+  const cfg=getCfg();
+  const DHS=['日','月','火','水','木','金','土'];
+  const sched=buildScheduleMap();
+  const evMap={};
+  // アーカイブは依頼スケジュールを表示しない（cases のみ）
+  cases.forEach(c=>{
+    const ri=cases.indexOf(c);
+    if(c.deadline&&!CaseState.isDelivered(c)){const d=parseYmd(c.deadline);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();if(!evMap[k])evMap[k]=[];evMap[k].push({type:dL(c.deadline)<=7?'ev-dl-u':'ev-dl',name:'📦'+calendarCaseName(c),idx:ri,isArc:false});}}
+    if(c.paydue&&!CaseState.isPaid(c)){const d=parseYmd(c.paydue);if(d.getFullYear()===year&&d.getMonth()===month){const k=d.getDate();if(!evMap[k])evMap[k]=[];evMap[k].push({type:dL(c.paydue)<0?'ev-pay-o':'ev-pay',name:'💳'+calendarCaseName(c),idx:ri,isArc:false});}}
+  });
+  const first=new Date(year,month,1).getDay();
+  const last=new Date(year,month+1,0).getDate();
+  const prev=new Date(year,month,0).getDate();
+  const calendarToday=calendarTodayYmd(calendarDate);
+  let h=DHS.map(d=>`<div class="cal-dh">${d}</div>`).join('');
+  for(let i=0;i<first;i++)h+=`<div class="cal-cell other"><div class="cal-date">${prev-first+i+1}</div></div>`;
+  for(let d=1;d<=last;d++){
+    const dateStr=year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const isT=dateStr===calendarToday;
+    const isHol=isHoliday(dateStr,cfg);
+    const daySched=sched[dateStr]||{morning:null,night:null,wait:[]};
+    
+    // 作業タスク表示
+    let taskH='';
+    if(!isHol){
+      if(daySched.morning){
+        const m=daySched.morning;
+        const fbCls=m.fallback?' fb':'';
+        const fbTitle=m.fallback?'（やむを得ず朝に配置）':'';
+        const label=escapeCaseLabel(calendarTaskName(m));
+        taskH+=`<div class="cal-task ${TASK_CLS[m.kind]}${fbCls}" onclick="jumpToCase(event,${m.idx})" title="${label} - ${TASK_LBL[m.kind]}${fbTitle}">☀️ ${label}</div>`;
+      }
+      if(daySched.night){
+        const n=daySched.night;
+        const fbCls=n.fallback?' fb':'';
+        const fbTitle=n.fallback?'（やむを得ず夜に配置）':'';
+        const label=escapeCaseLabel(calendarTaskName(n));
+        taskH+=`<div class="cal-task ${TASK_CLS[n.kind]}${fbCls}" onclick="jumpToCase(event,${n.idx})" title="${label} - ${TASK_LBL[n.kind]}${fbTitle}">🌃 ${label}</div>`;
+      }
+    }
+    // 返信待ち表示（休日でない、作業も入っていない日のみ）
+    if(daySched.wait.length>0&&!isHol&&!daySched.morning&&!daySched.night){
+      const w=daySched.wait[0];
+      taskH+=`<div class="cal-wait-lbl" title="返信待ち：${escapeCaseLabel(calendarTaskName(w))}"><i class="ti ti-coffee" style="font-size:11px"></i>練習・趣味の日</div>`;
+    }
+    
+    // 期日イベント表示
+    const evs=(evMap[d]||[]).slice(0,2);const more=(evMap[d]||[]).length-2;
+    let evH=evs.map(ev=>{
+      let click='';
+      if(ev.idx>=0)click=`onclick="jumpToCase(event,${ev.idx})"`;
+      return`<div class="cal-ev ${ev.type}" ${click} title="${escapeCaseLabel(ev.name)}">${escapeCaseLabel(ev.name)}</div>`;
+    }).join('');
+    if(more>0)evH+=`<div style="font-size:10px;color:var(--tx3);padding:1px 3px">他${more}件</div>`;
+    
+    const cellCls=['cal-cell'];
+    if(isT)cellCls.push('today');
+    if(isHol)cellCls.push('holiday');
+    
+    h+=`<div class="${cellCls.join(' ')}"><div class="cal-date">${d}<button class="holiday-toggle" onclick="toggleHoliday(event,'${dateStr}')" title="この日を休日にする">${isHol?'休✓':'休'}</button></div>${taskH}${evH}</div>`;
+  }
+  const rem=(first+last)%7;if(rem)for(let dx=1;dx<=7-rem;dx++)h+=`<div class="cal-cell other"><div class="cal-date">${dx}</div></div>`;
+  return`<div class="cal-month-hdr">${year}年${month+1}月</div><div class="cal-grid">${h}</div>`;
+}
+
+// 今日のアクションパネル
+function buildTodayPanel(){
+  const cfg=getCfg();
+  const sched=buildScheduleMap();
+  const today=todayYmd();
+  const daySched=sched[today]||{morning:null,night:null,wait:[]};
+  const isHol=isHoliday(today,cfg);
+  const businessDate=getBusinessDate();
+  const todayLbl=businessDate.getFullYear()+'年'+(businessDate.getMonth()+1)+'月'+businessDate.getDate()+'日（'+['日','月','火','水','木','金','土'][businessDate.getDay()]+'）';
+  
+  let inner='';
+  if(isHol){
+    inner=`<div class="today-empty">🌿 今日は休日です。ゆっくり過ごしてください。</div>`;
+  }else{
+    let rows='';
+    if(daySched.morning){
+      const m=daySched.morning;
+      const fbNote=m.fallback?' <span style="font-size:11px;color:var(--am);background:var(--am-bg);padding:1px 6px;border-radius:8px;margin-left:4px">優先枠埋まり</span>':'';
+      rows+=`<div class="today-task-row" onclick="jumpToCase(event,${m.idx})"><div class="today-task-icon">☀️</div><div class="today-task-block">朝〜昼 ${cfg.morningHours}h</div><div class="today-task-type">${TASK_LBL[m.kind]}${fbNote}</div><div class="today-task-case">${escapeCaseLabel(calendarTaskName(m))}</div></div>`;
+    }
+    if(daySched.night){
+      const n=daySched.night;
+      const fbNote=n.fallback?' <span style="font-size:11px;color:var(--am);background:var(--am-bg);padding:1px 6px;border-radius:8px;margin-left:4px">優先枠埋まり</span>':'';
+      rows+=`<div class="today-task-row" onclick="jumpToCase(event,${n.idx})"><div class="today-task-icon">🌃</div><div class="today-task-block">夜 ${cfg.nightHours}h</div><div class="today-task-type">${TASK_LBL[n.kind]}${fbNote}</div><div class="today-task-case">${escapeCaseLabel(calendarTaskName(n))}</div></div>`;
+    }
+    if(!rows){
+      if(daySched.wait.length>0){
+        const names=daySched.wait.map(w=>escapeCaseLabel(calendarTaskName(w))).join('、');
+        rows=`<div class="today-wait"><i class="ti ti-coffee" style="font-size:16px"></i>確認待ち：${names}　→ 今日は<strong>練習や趣味の絵</strong>を描く日です</div>`;
+      }else{
+        rows=`<div class="today-empty">予定された作業はありません。練習や次の依頼の準備に使えます。</div>`;
+      }
+    }else if(daySched.wait.length>0){
+      const names=daySched.wait.map(w=>escapeCaseLabel(calendarTaskName(w))).join('、');
+      rows+=`<div class="today-wait"><i class="ti ti-coffee" style="font-size:14px"></i>${names}は確認待ち中</div>`;
+    }
+    inner=rows;
+  }
+  return`<div class="today-panel"><div class="today-panel-hdr"><i class="ti ti-sun" style="font-size:15px;color:var(--ac)"></i><span class="today-panel-hdr-date">${todayLbl}の予定</span></div>${inner}</div>`;
+}
+
+function renderCal(){
+  const m2=calMonth===11?0:calMonth+1;
+  const y2=calMonth===11?calYear+1:calYear;
+  const calendarDate=new Date();
+  document.getElementById('cal-lbl').textContent=calYear+'年'+(calMonth+1)+'月　〜　'+y2+'年'+(m2+1)+'月';
+  document.getElementById('cal-container').innerHTML=buildMonthGrid(calYear,calMonth,calendarDate)+buildMonthGrid(y2,m2,calendarDate);
+}
+function renderTodayPanel(){
+  const el=document.getElementById('today-panel-container');
+  if(el)el.innerHTML=buildTodayPanel();
+}
+function jumpToCase(e,i){
+  e.stopPropagation();
+  openModal(i);
+  if(e.currentTarget.classList.contains('cal-task')){
+    const detailTab=document.querySelectorAll('.modal-tab')[1];
+    switchMTab('detail',detailTab);
+  }
+}
+function goToArchive(e){e.stopPropagation();document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab')[2].classList.add('active');document.getElementById('tp-archive').classList.add('active');renderArchive();}
+function prevMonth(){calMonth===0?(calYear--,calMonth=11):calMonth--;if(document.getElementById('tp-cal').classList.contains('active'))renderCal();}
+function nextMonth(){calMonth===11?(calYear++,calMonth=0):calMonth++;if(document.getElementById('tp-cal').classList.contains('active'))renderCal();}
+function goToday(){const d=getBusinessDate();calYear=d.getFullYear();calMonth=d.getMonth();if(document.getElementById('tp-cal').classList.contains('active'))renderCal();}
+
+// ===== INLINE MEMO SAVE =====
+let memoTimer=null;
+function autoSaveMemo(i,v){
+  cases[i].memo=v;
+  clearTimeout(memoTimer);
+  memoTimer=setTimeout(()=>{localStorage.setItem('cases',JSON.stringify(cases));notifyBackupChange();},600);
+}
+// ===== ARCHIVE PERMANENT DELETE =====
+function deleteFromArchive(i){
+  if(!confirm('「'+(archive[i].name||'この案件')+'」を完全に削除しますか？\nこの操作は取り消せません。'))return;
+  archive.splice(i,1);
+  saveAll();renderArchive();
+}
+function deleteAllArchive(){
+  if(!archive.length)return;
+  if(!confirm('アーカイブ内の全案件（'+archive.length+'件）を完全に削除しますか？\nこの操作は取り消せません。'))return;
+  archive=[];
+  saveAll();renderArchive();
+}
+
+// ===== BACKUP / IMPORT / EXPORT =====
+function buildBackupData(){
+  // 旧版へ戻せるよう、既存の発行者情報と採番カウンターをバックアップに保持する。
+  let profile={};
+  try{profile=JSON.parse(localStorage.getItem('profile')||'{}');}catch(e){}
+  const invseq={};
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('invseq_'))invseq[key]=localStorage.getItem(key);
+  }
+  return{schemaVersion:2,exported:new Date().toISOString(),cases,archive,settings:getCfg(),profile,invseq,spotHolidays:getSpotHolidays(),googleCalendar:googleCalendarSync?.exportConfig()};
+}
+const AI_CASE_FIELDS=['id','name','projectName','contact','received','deadline','paydue','isCompany','detail','price','paymentMethod','paymentTerms','paymentStatus','paidDate','step','workStatus','revisionCount','memo','format','portfolio','coverage','usage','bg','chara','estimateData','invNum'];
+function buildAiCase(source,archived){
+  const out={};
+  AI_CASE_FIELDS.forEach(key=>{if(source[key]!==undefined)out[key]=source[key];});
+  out.overallStatus=CaseState.deriveOverallStatus(source,archived);
+  const warnings=CaseState.dataWarnings(source,archived);
+  if(warnings.length)out.dataWarnings=warnings;
+  return out;
+}
+function buildAiCasesData(){
+  return{
+    kind:'illustration-dashboard-cases',
+    schemaVersion:2,
+    updatedAt:new Date().toISOString(),
+    timezone:'Asia/Tokyo',
+    statusGuide:{
+      in_progress:'制作中',
+      awaiting_client:'依頼者の確認・返信待ち',
+      delivered_awaiting_payment:'納品済み・入金待ち（制作作業は完了）',
+      completed:'納品済み・入金済みの完了案件',
+      archived_other:'未完了または未入金のまま手動アーカイブされた案件'
+    },
+    paymentGuide:{terms:{prepaid:'前払い',postpaid:'後払い',unknown:'不明・旧データから復元不可'},status:{unpaid:'未入金',paid:'入金済み'}},
+    cases:cases.map(c=>buildAiCase(c,false)),
+    archive:archive.map(c=>buildAiCase(c,true))
+  };
+}
+function parseAiCasesData(text){
+  const data=JSON.parse(text);
+  if(!data||data.kind!=='illustration-dashboard-cases'||!Array.isArray(data.cases)||!Array.isArray(data.archive)||![undefined,1,2].includes(data.schemaVersion))
+    throw new SyntaxError('AI参照用の案件JSONではありません。');
+  return data;
+}
+function comparableAiCasesData(data){
+  const copy=JSON.parse(JSON.stringify(data));
+  delete copy.updatedAt;
+  return JSON.stringify(copy);
+}
+function downloadBackup(){
+  if(googleCalendarSync?.isRunning()){alert('Googleへの転記完了後に、JSONを保存してください。');return;}
+  const blob=new Blob([JSON.stringify(buildBackupData(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='dashboard_sync.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+function downloadAiCases(){
+  const blob=new Blob([JSON.stringify(buildAiCasesData(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='dashboard_cases.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+function exportBackup(){
+  if(dashboardBackupSync)return dashboardBackupSync.saveFromGesture();
+  downloadBackup();
+}
+
+async function copyCurrentCaseJson(){
+  if(editIdx===null||editIdx===undefined)return;
+  const source=editIsArchive?archive[editIdx]:cases[editIdx];
+  if(!source)return;
+  const caseData=collectCaseFormData(source);
+  const json=JSON.stringify(caseData,null,2);
+  try{
+    await navigator.clipboard.writeText(json);
+  }catch(err){
+    const area=document.createElement('textarea');
+    area.value=json;
+    area.style.position='fixed';area.style.left='-9999px';area.style.top='0';
+    document.body.appendChild(area);area.focus();area.select();
+    const copied=document.execCommand('copy');
+    document.body.removeChild(area);
+    if(!copied){showInvToast('コピーできませんでした');return;}
+  }
+  showInvToast('案件JSONをクリップボードにコピーしました');
+}
+
+function openImportOv(){
+  document.getElementById('import-json-area').value='';
+  document.getElementById('import-status').textContent='';
+  document.getElementById('import-status').style.color='var(--tx2)';
+  document.getElementById('import-overlay').showModal();
+}
+function closeImportOv(){document.getElementById('import-overlay').close();}
+function applyImportJson(){
+  const txt=document.getElementById('import-json-area').value.trim();
+  const status=document.getElementById('import-status');
+  if(!txt){
+    status.style.color='#c33';
+    status.textContent='JSONを貼り付けてください。';
+    return;
+  }
+  let data;
+  try{data=JSON.parse(txt);}
+  catch(err){
+    status.style.color='#c33';
+    status.textContent='JSONの形式が正しくありません：'+err.message;
+    return;
+  }
+  // cases配列を取得（{cases:[...]} 形式 / 単体ケースオブジェクト / 配列直 のいずれにも対応）
+  let newCases=[];
+  if(Array.isArray(data))newCases=data;
+  else if(Array.isArray(data.cases))newCases=data.cases;
+  else if(data.name||data.contact)newCases=[data]; // 単体ケースオブジェクト
+  else{
+    status.style.color='#c33';
+    status.textContent='cases配列または案件オブジェクトが見つかりません。';
+    return;
+  }
+  if(newCases.length===0){
+    status.style.color='#c33';
+    status.textContent='インポートする案件がありません。';
+    return;
+  }
+  // 既存案件に追加
+  const usedIds=new Set([...cases,...archive].map(c=>c?.id).filter(Boolean));
+  cases=cases.concat(newCases.map(item=>{
+    const normalized=normalizeCase(item);
+    if(usedIds.has(normalized.id))normalized.id=makeCaseId();
+    usedIds.add(normalized.id);
+    return normalized;
+  }));
+  saveAll();
+  closeImportOv();
+  // 成功通知（インボイストーストを流用）
+  if(typeof showInvToast==='function'){
+    showInvToast(newCases.length+'件の案件を追加しました');
+  }else{
+    alert(newCases.length+'件の案件を追加しました');
+  }
+}
+
+function getBackupImportInput(){
+  if(backupImportInput)return backupImportInput;
+  const input=document.createElement('input');
+  input.type='file';input.accept='.json';
+  input.setAttribute('aria-hidden','true');
+  input.tabIndex=-1;
+  input.style.position='fixed';
+  input.style.left='-9999px';
+  input.style.top='0';
+  input.style.width='1px';
+  input.style.height='1px';
+  input.style.opacity='0';
+  input.addEventListener('change',handleBackupFileSelect);
+  document.body.appendChild(input);
+  backupImportInput=input;
+  return input;
+}
+
+function applyBackupText(text){
+  try{
+    const data=JSON.parse(text);
+    const aiCases=data?.kind==='illustration-dashboard-cases';
+    if(aiCases)parseAiCasesData(text);
+    if(googleCalendarSync?.isRunning()){alert('Googleへの転記完了後に、JSONを読み込んでください。');return false;}
+    if(!Array.isArray(data.cases)&&!Array.isArray(data.archive)){alert('有効なバックアップファイルではありません。');return false;}
+    if(!confirm(aiCases
+      ? '案件とアーカイブをこのJSONで上書きしますか？\n設定とGoogle連携情報は維持します。この操作は取り消せません。'
+      : '現在のデータを上書きしてインポートしますか？\nこの操作は取り消せません。'))return false;
+    if(Array.isArray(data.cases))cases=data.cases.map(normalizeCase);
+    if(Array.isArray(data.archive))archive=data.archive.map(normalizeCase);
+    if(!aiCases){
+      if(data.settings){
+        const importedCfg={...DEF_CFG,...data.settings};
+        importedCfg.drawItems=normalizeDrawItems(data.settings.drawItems,importedCfg);
+        localStorage.setItem('cfg',JSON.stringify(syncLegacyDrawPrices(importedCfg)));
+      }
+      if(data.profile&&typeof data.profile==='object')localStorage.setItem('profile',JSON.stringify(data.profile));
+      if(data.invseq&&typeof data.invseq==='object'){
+        Object.entries(data.invseq).forEach(([key,value])=>{
+          if(/^invseq_\d{6}$/.test(key))localStorage.setItem(key,String(value));
+        });
+      }
+      if(data.spotHolidays&&typeof data.spotHolidays==='object'){
+        localStorage.setItem('holidays',JSON.stringify(data.spotHolidays));
+      }
+      googleCalendarSync?.importConfig(data.googleCalendar);
+    }
+    activeBusinessDay=todayYmd();
+    scheduleBusinessDayRefresh();
+    loadSettingsUI();updateSettingsLabels();
+    saveAll();render();
+    alert('インポートが完了しました（'+cases.length+'件）');
+    return true;
+  }catch(err){alert('ファイルの読み込みに失敗しました。有効なJSONファイルか確認してください。');return false;}
+}
+
+function handleBackupFileSelect(e){
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onerror=()=>alert('ファイルを読み込めませんでした。保存先の同期が完了してから、もう一度お試しください。');
+  reader.onabort=()=>alert('ファイルの読み込みが中断されました。もう一度お試しください。');
+  reader.onload=async ev=>{
+    const text=String(ev.target.result||'');
+    if(applyBackupText(text))await dashboardBackupSync?.adoptImportedText(text);
+  };
+  try{reader.readAsText(file);}
+  catch(err){alert('ファイルを読み込めませんでした。保存先の同期が完了してから、もう一度お試しください。');}
+}
+
+function importBackup(){
+  const input=getBackupImportInput();
+  input.value='';
+  input.click();
+}
+
+function showInvToast(msg){
+  let t=document.getElementById('inv-toast-el');
+  if(!t){t=document.createElement('div');t.id='inv-toast-el';t.className='inv-toast';document.body.appendChild(t);}
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),4000);
+}
+
+// ===== INIT =====
+loadSettingsUI();updateSettingsLabels();renderCharsEst();calcEst();render();
+scheduleBusinessDayRefresh();
+scheduleCalendarDayRefresh();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshDateBoundaries();});
+window.addEventListener('focus',refreshDateBoundaries);
+
+// ===== ダイアログ外側クリックで閉じる =====
+// mousedown・mouseup の両方が背景上にある時のみ閉じる（内側でドラッグして外でリリースした場合は閉じない）
+document.querySelectorAll('dialog.overlay').forEach(dlg=>{
+  let _mdOnBg=false;
+  dlg.addEventListener('mousedown',e=>{ _mdOnBg=(e.target===dlg); });
+  dlg.addEventListener('click',e=>{ if(e.target===dlg&&_mdOnBg)dlg.close(); });
+});
+
+// ===== カードクリックのイベント委譲 =====
+// case-list 全体に1つだけリスナーを置き、ボタン以外の場所がクリックされた時に編集モーダルを開く
+document.getElementById('case-list').addEventListener('click',e=>{
+  // ボタン（その子要素含む）をクリックした場合は、そのボタン自身のハンドラに任せる
+  if(e.target.closest('button'))return;
+  // カード要素を探す
+  const card=e.target.closest('.case-card');
+  if(!card)return;
+  const i=parseInt(card.id.replace('card-',''));
+  if(!isNaN(i))openModal(i);
+});
+// arc-list も同様に、カード本体クリックでアーカイブ案件の編集モーダルを開く
+document.getElementById('arc-list').addEventListener('click',e=>{
+  if(e.target.closest('button'))return;
+  const card=e.target.closest('.arc-card');
+  if(!card)return;
+  const i=parseInt(card.id.replace('arc-card-',''));
+  if(!isNaN(i))openModal(i,true);
+});
+
+// 初回のファイル選択でchangeが落ちる環境への対策として、読み込み用inputを先に作って保持する
+getBackupImportInput();
+dashboardBackupSync=window.DashboardBackupFile?.mount({
+  element:document.getElementById('icloud-backup-settings'),
+  shortcutButton:document.getElementById('backup-shortcut'),
+  snapshot:buildBackupData,
+  download:downloadBackup,
+  importText:applyBackupText,
+  isBusy:()=>googleCalendarSync?.isRunning()
+});
+dashboardAiSync=window.DashboardBackupFile?.mount({
+  element:document.getElementById('google-drive-ai-settings'),
+  snapshot:buildAiCasesData,
+  download:downloadAiCases,
+  fileName:'dashboard_cases.json',
+  recordId:'google-drive-ai-json',
+  settingsKey:'dashboardGoogleDriveAi',
+  pickerId:'ichilole-dashboard-ai-json',
+  lockName:'ichilole-dashboard-google-drive-ai-json',
+  validate:parseAiCasesData,
+  comparable:comparableAiCasesData,
+  syncOnReady:true,
+  ui:{
+    heading:'バックアップ（個人情報なし）',
+    fileDescription:'AI参照用の案件JSON'
+  }
+});
+googleCalendarSync=window.DashboardCalendarUI?.mount({
+  element:document.getElementById('google-calendar-settings'),
+  shortcutButton:document.getElementById('google-transfer-shortcut'),
+  onSynced:()=>dashboardBackupSync?.changed({immediate:true}),
+  snapshot:()=>({
+    today:todayYmd(),
+    cases:cases.map(c=>({name:c.name,detail:c.detail,deadline:c.deadline,paydue:c.paydue,paymentStatus:c.paymentStatus,step:c.step})),
+    schedule:buildScheduleMap()
+  })
+});
+</script>
+<!-- ファイル名コピートースト -->
+<div id="inv-toast-el" class="inv-toast"></div>
+
+</body>
+</html>
