@@ -5,7 +5,7 @@
   const DEVICE_KEY = 'dashboardGoogleCalendarDevice';
   const SCOPES = 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar.app.created https://www.googleapis.com/auth/calendar.calendarlist.readonly';
   const API_ROOT = 'https://www.googleapis.com/calendar/v3';
-  const BUILD = 'v69';
+  const BUILD = 'v70';
   const AUTO_SYNC_DELAY_MS = 2000;
   const CLIENT_COLORS = [
     { backgroundColor: '#7986cb', colorId: '1' }, { backgroundColor: '#33b679', colorId: '2' },
@@ -52,14 +52,14 @@
     element.innerHTML = `
       <h3>Googleカレンダーへ転記</h3>
       <p class="gcal-note">制作予定を専用カレンダーへ送ります。案件名・工程・依頼詳細・期日を転記し、確認待ちはダッシュボード内だけに表示します。</p>
-      <p class="gcal-note">変更時は自動反映します。制作状態の変更は1分待ってから送信します。接続が切れている場合は、編集後の画面操作でGoogleへの再接続を試みます。日付変更だけでは再接続しません。上部の「未転記」から手動で転記できます。</p>
+      <p class="gcal-note">変更時と業務日の切り替わりに自動反映します。制作状態の変更は1分待ってから送信します。接続が切れている場合は、編集操作の時点でGoogleへの再接続を試みます。日付変更だけでは再接続しません。上部の「未転記」から手動で転記できます。</p>
       <div class="gcal-actions">
         <button type="button" class="reset-btn" data-action="connect">Googleに接続して転記</button>
         <button type="button" class="reset-btn" data-action="sync" disabled>今すぐ転記</button>
         <button type="button" class="reset-btn" data-action="takeover" hidden disabled>中断した転記をこの端末で引き継ぐ</button>
         <button type="button" class="reset-btn" data-action="disconnect" disabled>接続を停止</button>
       </div>
-      <label class="gcal-auto"><input type="checkbox" data-field="auto"> 変更時にGoogleへ自動接続して転記</label>
+      <label class="gcal-auto"><input type="checkbox" data-field="auto"> 変更時・業務日切り替え時に自動転記</label>
       <p class="gcal-status" role="status" aria-live="polite"></p>
       <p class="gcal-last"></p>
       <details class="gcal-setup">
@@ -88,7 +88,7 @@
     function authorized() { return !!token && Date.now() < expiresAt; }
     function reconnectMessage() {
       return autoReconnectPending
-        ? '未転記の変更があります。次の画面操作でGoogleへの再接続を試みます。'
+        ? '未転記の変更があります。上部の「未転記」からGoogleへ接続して転記してください。'
         : '日付変更による未転記の予定があります。上部の「未転記」からGoogleへ接続して転記してください。';
     }
     function refresh() {
@@ -457,7 +457,7 @@
       runSync({ takeover: true });
     });
     disconnectButton.addEventListener('click', () => disconnect(undefined, { allowAutoReconnect: false }));
-    q('[data-field="auto"]').addEventListener('change', event => { state.auto = event.target.checked; save(); if (state.auto) changed({ markDirty: false }); });
+    q('[data-field="auto"]').addEventListener('change', event => { state.auto = event.target.checked; save(); });
     q('[data-action="save"]').addEventListener('click', () => {
       const clientId = q('[data-field="client"]').value.trim();
       if (!/^[A-Za-z0-9_-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
@@ -472,18 +472,12 @@
     function rememberUserChangeGesture(event) {
       if (!event.isTrusted) return;
       userChangeGesture = true;
-      const explicitConnect = event.target?.closest?.('[data-action="connect"], #google-transfer-shortcut');
-      if (!explicitConnect && autoReconnectPending && unsyncedChanges && state.auto && !authorized() && state.clientId &&
-          !automaticConnectAttempted && !connecting && !preparing && root.google?.accounts?.oauth2) {
-        connect({ automatic: true });
-      }
       setTimeout(() => { userChangeGesture = false; }, 0);
     }
     document.addEventListener('click', rememberUserChangeGesture, true);
     document.addEventListener('change', rememberUserChangeGesture, true);
-    on(root, 'online', () => changed({ markDirty: false }));
     on(root, 'beforeunload', event => {
-      if ((!unsyncedChanges && !running && !connecting) || !state.clientId) return;
+      if ((!autoReconnectPending && !running && !connecting) || !state.clientId) return;
       event.preventDefault();
       event.returnValue = '';
     });

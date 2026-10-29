@@ -284,6 +284,12 @@ dialog.overlay select{
 .gcal-setup summary{cursor:pointer}
 .gcal-client{display:flex;flex-direction:column;gap:6px;margin:.5rem 0}
 .gcal-client input{width:100%;padding:8px;border:.5px solid var(--bd);border-radius:var(--rs);background:var(--bg2);color:var(--tx)}
+.backup-label-input,.backup-destination input{min-width:0;padding:7px;border:.5px solid var(--bd);border-radius:var(--rs);background:var(--bg2);color:var(--tx)}
+.backup-label-input{flex:1 1 180px}
+.backup-destinations{display:grid;gap:8px;margin:.75rem 0}
+.backup-destination{border:.5px solid var(--bd);border-radius:var(--rs);padding:10px}
+.backup-destination label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--tx2)}
+.backup-destination .gcal-actions{margin:.5rem 0 0}
 .backup-sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:#DEAD54;flex:0 0 auto}
 #backup-shortcut[data-state="saved"] .backup-sync-dot,#backup-shortcut[data-state="ready"] .backup-sync-dot{background:#6FBD98}
 #backup-shortcut[data-state="saving"] .backup-sync-dot{background:#7AA7D9;box-shadow:0 0 0 3px rgba(122,167,217,.2)}
@@ -396,8 +402,7 @@ dialog.overlay select{
       <div class="settings-row" style="align-items:flex-start"><label style="padding-top:6px">定休日（毎週固定）</label><div id="cfg-holidays" style="display:flex;gap:5px;flex-wrap:wrap;padding-top:3px"></div></div>
       <div class="settings-row"><label>返信待ち期間</label><input type="number" id="cfg-waitDays" onchange="saveCfg()" min="1" max="30"><span class="unit">日（カレンダーに表示）</span></div>
     </div>
-    <div class="settings-section" id="icloud-backup-settings"></div>
-    <div class="settings-section" id="google-drive-ai-settings"></div>
+    <div class="settings-section" id="backup-settings"></div>
     <div class="settings-section" id="google-calendar-settings"></div>
     <button class="reset-btn" onclick="resetCfg()"><i class="ti ti-refresh"></i> 設定をデフォルトに戻す</button>
   </div>
@@ -584,14 +589,13 @@ dialog.overlay select{
 
 <script src="case-state-core.js?v=1"></script>
 <script src="calendar-sync-core.js?v=68"></script>
-<script src="calendar-sync-ui.js?v=69"></script>
-<script src="backup-file-sync.js?v=3"></script>
+<script src="calendar-sync-ui.js?v=70"></script>
+<script src="backup-file-sync.js?v=4"></script>
 <script>
 let googleCalendarSync=null;
 let dashboardBackupSync=null;
-let dashboardAiSync=null;
-function notifyBackupChange(){dashboardBackupSync?.changed();dashboardAiSync?.changed();}
-function notifyCalendarChange(options){googleCalendarSync?.changed(options);notifyBackupChange();}
+function notifyBackupChange(){dashboardBackupSync?.changed();}
+function notifyCalendarChange(options){if(!options?.skipCalendar)googleCalendarSync?.changed(options);notifyBackupChange();}
 // ===== DEFAULT SETTINGS =====
 const DEF_DRAW_ITEMS = [
   {id:'sd',label:'SDキャラクター（2〜3頭身）',coverage:'SDキャラクター',price:6000,hidden:false},
@@ -941,11 +945,19 @@ function render(){
   renderTodayPanel();
   const remC=cases.filter(c=>isRemind(c));
   const ap=document.getElementById('alert-pay');
-  if(remC.length){ap.classList.add('show');ap.innerHTML='<i class="ti ti-bell-ringing" style="vertical-align:-2px;margin-right:6px"></i>支払期限'+cfg.remindDays+'日以内：'+remC.map(c=>'「'+(c.name||'—')+'」あと'+dL(c.paydue)+'日').join('、');}
+  if(remC.length){
+    ap.classList.add('show');
+    ap.innerHTML='<i class="ti ti-bell-ringing" style="vertical-align:-2px;margin-right:6px"></i>';
+    ap.append(document.createTextNode('支払期限'+cfg.remindDays+'日以内：'+remC.map(c=>'「'+(c.name||'—')+'」あと'+dL(c.paydue)+'日').join('、')));
+  }
   else ap.classList.remove('show');
   const dlU=cases.filter(c=>c.deadline&&!CaseState.isDelivered(c)&&dLDeadlineAlert(c.deadline)>=0&&dLDeadlineAlert(c.deadline)<=7);
   const ad=document.getElementById('alert-dl');
-  if(dlU.length){ad.classList.add('show');ad.innerHTML='<i class="ti ti-alert-triangle" style="vertical-align:-2px;margin-right:6px"></i>締切まで：'+dlU.map(c=>'「'+(c.name||'—')+'」あと'+dLDeadlineAlert(c.deadline)+'日').join('、');}
+  if(dlU.length){
+    ad.classList.add('show');
+    ad.innerHTML='<i class="ti ti-alert-triangle" style="vertical-align:-2px;margin-right:6px"></i>';
+    ad.append(document.createTextNode('締切まで：'+dlU.map(c=>'「'+(c.name||'—')+'」あと'+dLDeadlineAlert(c.deadline)+'日').join('、')));
+  }
   else ad.classList.remove('show');
   const ab=document.getElementById('arc-badge');
   if(archive.length){ab.style.display='inline';ab.textContent=archive.length;}else ab.style.display='none';
@@ -1467,7 +1479,7 @@ function refreshBusinessDay(){
       calYear=current.getFullYear();calMonth=current.getMonth();
     }
     render();
-      notifyCalendarChange({autoReconnect:false});
+    notifyCalendarChange({autoReconnect:false});
     if(document.getElementById('tp-cal').classList.contains('active'))renderCal();
   }
   scheduleBusinessDayRefresh();
@@ -1829,53 +1841,7 @@ function deleteAllArchive(){
 
 // ===== BACKUP / IMPORT / EXPORT =====
 function buildBackupData(){
-  // 旧版へ戻せるよう、既存の発行者情報と採番カウンターをバックアップに保持する。
-  let profile={};
-  try{profile=JSON.parse(localStorage.getItem('profile')||'{}');}catch(e){}
-  const invseq={};
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(key&&key.startsWith('invseq_'))invseq[key]=localStorage.getItem(key);
-  }
-  return{schemaVersion:2,exported:new Date().toISOString(),cases,archive,settings:getCfg(),profile,invseq,spotHolidays:getSpotHolidays(),googleCalendar:googleCalendarSync?.exportConfig()};
-}
-const AI_CASE_FIELDS=['id','name','projectName','contact','received','deadline','paydue','isCompany','detail','price','paymentMethod','paymentTerms','paymentStatus','paidDate','step','workStatus','revisionCount','memo','format','portfolio','coverage','usage','bg','chara','estimateData','invNum'];
-function buildAiCase(source,archived){
-  const out={};
-  AI_CASE_FIELDS.forEach(key=>{if(source[key]!==undefined)out[key]=source[key];});
-  out.overallStatus=CaseState.deriveOverallStatus(source,archived);
-  const warnings=CaseState.dataWarnings(source,archived);
-  if(warnings.length)out.dataWarnings=warnings;
-  return out;
-}
-function buildAiCasesData(){
-  return{
-    kind:'illustration-dashboard-cases',
-    schemaVersion:2,
-    updatedAt:new Date().toISOString(),
-    timezone:'Asia/Tokyo',
-    statusGuide:{
-      in_progress:'制作中',
-      awaiting_client:'依頼者の確認・返信待ち',
-      delivered_awaiting_payment:'納品済み・入金待ち（制作作業は完了）',
-      completed:'納品済み・入金済みの完了案件',
-      archived_other:'未完了または未入金のまま手動アーカイブされた案件'
-    },
-    paymentGuide:{terms:{prepaid:'前払い',postpaid:'後払い',unknown:'不明・旧データから復元不可'},status:{unpaid:'未入金',paid:'入金済み'}},
-    cases:cases.map(c=>buildAiCase(c,false)),
-    archive:archive.map(c=>buildAiCase(c,true))
-  };
-}
-function parseAiCasesData(text){
-  const data=JSON.parse(text);
-  if(!data||data.kind!=='illustration-dashboard-cases'||!Array.isArray(data.cases)||!Array.isArray(data.archive)||![undefined,1,2].includes(data.schemaVersion))
-    throw new SyntaxError('AI参照用の案件JSONではありません。');
-  return data;
-}
-function comparableAiCasesData(data){
-  const copy=JSON.parse(JSON.stringify(data));
-  delete copy.updatedAt;
-  return JSON.stringify(copy);
+  return{schemaVersion:2,exported:new Date().toISOString(),cases,archive,settings:getCfg(),spotHolidays:getSpotHolidays(),googleCalendar:googleCalendarSync?.exportConfig()};
 }
 function downloadBackup(){
   if(googleCalendarSync?.isRunning()){alert('Googleへの転記完了後に、JSONを保存してください。');return;}
@@ -1883,13 +1849,6 @@ function downloadBackup(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;
   a.download='dashboard_sync.json';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-}
-function downloadAiCases(){
-  const blob=new Blob([JSON.stringify(buildAiCasesData(),null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;
-  a.download='dashboard_cases.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 function exportBackup(){
@@ -1962,7 +1921,7 @@ function applyImportJson(){
     usedIds.add(normalized.id);
     return normalized;
   }));
-  saveAll();
+  saveAll({skipCalendar:true});
   closeImportOv();
   // 成功通知（インボイストーストを流用）
   if(typeof showInvToast==='function'){
@@ -1993,36 +1952,29 @@ function getBackupImportInput(){
 function applyBackupText(text){
   try{
     const data=JSON.parse(text);
-    const aiCases=data?.kind==='illustration-dashboard-cases';
-    if(aiCases)parseAiCasesData(text);
+    if(data?.kind==='illustration-dashboard-cases'){
+      alert('dashboard_cases.json の読み込みは終了しました。完全バックアップの dashboard_sync.json を選んでください。');
+      return false;
+    }
     if(googleCalendarSync?.isRunning()){alert('Googleへの転記完了後に、JSONを読み込んでください。');return false;}
     if(!Array.isArray(data.cases)&&!Array.isArray(data.archive)){alert('有効なバックアップファイルではありません。');return false;}
-    if(!confirm(aiCases
-      ? '案件とアーカイブをこのJSONで上書きしますか？\n設定とGoogle連携情報は維持します。この操作は取り消せません。'
-      : '現在のデータを上書きしてインポートしますか？\nこの操作は取り消せません。'))return false;
+    if(!confirm('現在のデータを上書きしてインポートしますか？\nこの操作は取り消せません。'))return false;
     if(Array.isArray(data.cases))cases=data.cases.map(normalizeCase);
     if(Array.isArray(data.archive))archive=data.archive.map(normalizeCase);
-    if(!aiCases){
-      if(data.settings){
-        const importedCfg={...DEF_CFG,...data.settings};
-        importedCfg.drawItems=normalizeDrawItems(data.settings.drawItems,importedCfg);
-        localStorage.setItem('cfg',JSON.stringify(syncLegacyDrawPrices(importedCfg)));
-      }
-      if(data.profile&&typeof data.profile==='object')localStorage.setItem('profile',JSON.stringify(data.profile));
-      if(data.invseq&&typeof data.invseq==='object'){
-        Object.entries(data.invseq).forEach(([key,value])=>{
-          if(/^invseq_\d{6}$/.test(key))localStorage.setItem(key,String(value));
-        });
-      }
-      if(data.spotHolidays&&typeof data.spotHolidays==='object'){
-        localStorage.setItem('holidays',JSON.stringify(data.spotHolidays));
-      }
-      googleCalendarSync?.importConfig(data.googleCalendar);
+    if(data.settings){
+      const importedCfg={...DEF_CFG,...data.settings};
+      importedCfg.drawItems=normalizeDrawItems(data.settings.drawItems,importedCfg);
+      localStorage.setItem('cfg',JSON.stringify(syncLegacyDrawPrices(importedCfg)));
     }
+    // 旧バックアップに残る発行者情報・請求書採番情報は新形式へ持ち込まない。
+    if(data.spotHolidays&&typeof data.spotHolidays==='object'){
+      localStorage.setItem('holidays',JSON.stringify(data.spotHolidays));
+    }
+    googleCalendarSync?.importConfig(data.googleCalendar);
     activeBusinessDay=todayYmd();
     scheduleBusinessDayRefresh();
     loadSettingsUI();updateSettingsLabels();
-    saveAll();render();
+    saveAll({skipCalendar:true});render();
     alert('インポートが完了しました（'+cases.length+'件）');
     return true;
   }catch(err){alert('ファイルの読み込みに失敗しました。有効なJSONファイルか確認してください。');return false;}
@@ -2092,29 +2044,12 @@ document.getElementById('arc-list').addEventListener('click',e=>{
 // 初回のファイル選択でchangeが落ちる環境への対策として、読み込み用inputを先に作って保持する
 getBackupImportInput();
 dashboardBackupSync=window.DashboardBackupFile?.mount({
-  element:document.getElementById('icloud-backup-settings'),
+  element:document.getElementById('backup-settings'),
   shortcutButton:document.getElementById('backup-shortcut'),
   snapshot:buildBackupData,
   download:downloadBackup,
   importText:applyBackupText,
   isBusy:()=>googleCalendarSync?.isRunning()
-});
-dashboardAiSync=window.DashboardBackupFile?.mount({
-  element:document.getElementById('google-drive-ai-settings'),
-  snapshot:buildAiCasesData,
-  download:downloadAiCases,
-  fileName:'dashboard_cases.json',
-  recordId:'google-drive-ai-json',
-  settingsKey:'dashboardGoogleDriveAi',
-  pickerId:'ichilole-dashboard-ai-json',
-  lockName:'ichilole-dashboard-google-drive-ai-json',
-  validate:parseAiCasesData,
-  comparable:comparableAiCasesData,
-  syncOnReady:true,
-  ui:{
-    heading:'バックアップ（個人情報なし）',
-    fileDescription:'AI参照用の案件JSON'
-  }
 });
 googleCalendarSync=window.DashboardCalendarUI?.mount({
   element:document.getElementById('google-calendar-settings'),
